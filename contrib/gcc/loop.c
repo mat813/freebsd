@@ -5998,8 +5998,6 @@ basic_induction_var (x, mode, dest_reg, p, inc_val, mult_val, location)
 	       || (GET_CODE (SET_DEST (set)) == SUBREG
 		   && (GET_MODE_SIZE (GET_MODE (SET_DEST (set)))
 		       <= UNITS_PER_WORD)
-		   && (GET_MODE_CLASS (GET_MODE (SET_DEST (set)))
-		       == MODE_INT)
 		   && SUBREG_REG (SET_DEST (set)) == x))
 	      && basic_induction_var (SET_SRC (set),
 				      (GET_MODE (SET_SRC (set)) == VOIDmode
@@ -7698,7 +7696,6 @@ check_dbra_loop (loop_end, insn_count, loop_start, loop_info)
   for (bl = loop_iv_list; bl; bl = bl->next)
     {
       if (bl->biv_count == 1
-	  && ! bl->biv->maybe_multiple
 	  && bl->biv->dest_reg == XEXP (comparison, 0)
 	  && ! reg_used_between_p (regno_reg_rtx[bl->regno], bl->biv->insn,
 				   first_compare))
@@ -7764,8 +7761,7 @@ check_dbra_loop (loop_end, insn_count, loop_start, loop_info)
 	    }
 	}
     }
-  else if (GET_CODE (bl->biv->add_val) == CONST_INT
-	   && INTVAL (bl->biv->add_val) > 0)
+  else if (INTVAL (bl->biv->add_val) > 0)
     {
       /* Try to change inc to dec, so can apply above optimization.  */
       /* Can do this if:
@@ -7856,7 +7852,7 @@ check_dbra_loop (loop_end, insn_count, loop_start, loop_info)
 		{
 		  if (v->giv_type == DEST_REG
 		      && reg_mentioned_p (v->dest_reg,
-					 PATTERN (first_loop_store_insn)) 
+					  XEXP (loop_store_mems, 0))
 		      && loop_insn_first_p (first_loop_store_insn, v->insn))
 		    reversible_mem_store = 0;
 		}
@@ -9555,10 +9551,6 @@ load_mems (scan_start, end, loop_top, start)
 	      mem_list_entry = XEXP (mem_list_entry, 1);
 	    }
 	  
-	  if (flag_float_store && written
-	      && GET_MODE_CLASS (GET_MODE (mem)) == MODE_FLOAT)
-	    loop_mems[i].optimize = 0;
-
 	  /* If this MEM is written to, we must be sure that there
 	     are no reads from another MEM that aliases this one.  */ 
 	  if (loop_mems[i].optimize && written)

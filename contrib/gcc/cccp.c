@@ -3299,9 +3299,7 @@ randomchar:
 #endif
 		
 		if (output_marks) {
-		  op->bufp = obp;
 		  check_expand (op, limit - ibp + 2);
-		  obp = op->bufp;
 		  *obp++ = '\n';
 		  *obp++ = '-';
 		}
@@ -3983,7 +3981,7 @@ handle_directive (ip, op)
 	  case '\'':
 	  case '\"':
 	    {
-	      int backslash_newlines_p = 0;
+	      int backslash_newlines_p;
 
 	      register U_CHAR *bp1
 		= skip_quoted_string (xp - 1, bp, ip->lineno,
