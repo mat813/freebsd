@@ -1,7 +1,0 @@
-#
-#
-#
-
-
-INFODIR= /usr/share/info
-
