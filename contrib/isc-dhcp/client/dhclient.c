@@ -56,7 +56,8 @@
 
 #ifndef lint
 static char ocopyright[] =
-"$Id: dhclient.c,v 1.44.2.47 2000/09/06 20:59:09 mellon Exp $ Copyright (c) 1995, 1996, 1997, 1998, 1999 The Internet Software Consortium.  All rights reserved.\n";
+"$Id: dhclient.c,v 1.44.2.47 2000/09/06 20:59:09 mellon Exp $ Copyright (c) 1995, 1996, 1997, 1998, 1999 The Internet Software Consortium.  All rights reserved.\n"
+"$FreeBSD$\n";
 #endif /* not lint */
 
 #include "dhcpd.h"
@@ -89,6 +90,7 @@ u_int16_t remote_port;
 int log_priority;
 int no_daemon;
 int save_scripts;
+int onetry;
 
 static char copyright[] =
 "Copyright 1995, 1996, 1997, 1998, 1999 The Internet Software Consortium.";
@@ -107,7 +109,7 @@ int main (argc, argv, envp)
 	struct servent *ent;
 	struct interface_info *ip;
 	int seed;
-	int quiet = 0;
+	int quiet = 1;
 	char *s;
 
 	s = strrchr (argv [0], '/');
@@ -154,6 +156,8 @@ int main (argc, argv, envp)
 		} else if (!strcmp (argv [i], "-q")) {
 			quiet = 1;
 			quiet_interface_discovery = 1;
+		} else if (!strcmp (argv [i], "-1")) {
+			onetry = 1;
  		} else if (argv [i][0] == '-') {
  		    usage (s);
  		} else {
@@ -164,7 +168,7 @@ int main (argc, argv, envp)
  			error ("Insufficient memory to %s %s",
  			       "record interface", argv [i]);
  		    memset (tmp, 0, sizeof *tmp);
- 		    strcpy (tmp -> name, argv [i]);
+ 		    strlcpy (tmp -> name, argv [i], IFNAMSIZ);
  		    tmp -> next = interfaces;
  		    tmp -> flags = INTERFACE_REQUESTED;
 		    interfaces_requested = 1;
@@ -297,12 +301,14 @@ static void usage (appname)
 	note (url);
 	note ("");
 
-	warn ("Usage: %s [-c] [-p <port>] [-lf lease-file]", appname);
-	error ("       [-pf pidfile] [interface]");
+	warn ("Usage: %s [-D] [-d] [-p <port>] [-cf conf-file]", appname);
+	error ("       [-lf lease-file] [-pf pidfile] [-q] [-1] [interface]");
 }
 
 void cleanup ()
 {
+	/* Make sure the pidfile is gone. */
+	unlink (path_dhclient_pid);
 }
 
 /* Individual States:
@@ -1182,6 +1188,10 @@ void state_panic (ipp)
 	/* No leases were available, or what was available didn't work, so
 	   tell the shell script that we failed to allocate an address,
 	   and try again later. */
+	if (onetry) {
+		exit(2);
+		note ("Unable to obtain a lease on first try - exiting.\n");
+	}
 	note ("No working leases in persistent database - sleeping.\n");
 	script_init (ip, "FAIL", (struct string_list *)0);
 	if (ip -> client -> alias)

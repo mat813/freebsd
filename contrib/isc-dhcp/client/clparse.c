@@ -42,7 +42,8 @@
 
 #ifndef lint
 static char copyright[] =
-"$Id: clparse.c,v 1.13.2.5 2000/07/20 05:06:40 mellon Exp $ Copyright (c) 1997 The Internet Software Consortium.  All rights reserved.\n";
+"$Id: clparse.c,v 1.13.2.5 2000/07/20 05:06:40 mellon Exp $ Copyright (c) 1997 The Internet Software Consortium.  All rights reserved.\n"
+"$FreeBSD$\n";
 #endif /* not lint */
 
 #include "dhcpd.h"
@@ -50,7 +51,7 @@ static char copyright[] =
 
 struct client_config top_level_config;
 
-char client_script_name [] = "/etc/dhclient-script";
+char client_script_name [] = "/sbin/dhclient-script";
 
 /* client-conf-file :== client-declarations EOF
    client-declarations :== <nil>
@@ -485,7 +486,7 @@ struct interface_info *interface_or_dummy (name)
 			error ("Insufficient memory to record interface %s",
 			       name);
 		memset (ip, 0, sizeof *ip);
-		strcpy (ip -> name, name);
+		strlcpy (ip -> name, name, IFNAMSIZ);
 		ip -> next = dummy_interfaces;
 		dummy_interfaces = ip;
 	}
