@@ -1,0 +1,199 @@
+Thu Jan 22 10:05:55 1998  Jim Kingdon  <kingdon@harvey.cyclic.com>
+
+	* server.c (serve_kopt): Check for length of arg.  Based on
+	inspection of the code, plugs a buffer overrun security hole which
+	was introduced Monday.
+
+	* server.c (serve_is_modified): Don't call xmalloc; we aren't
+	allowed to call error() here.  Remove duplicate (and potentially
+	confusing) variable 'p'.
+
+	* log.c (log_fileproc): Look for first character of version
+	'0' AND second character '\0', rather than OR.  I didn't try to
+	come up with a test case but this looks like a simple thinko
+	(albeit one which would show up in obscure cases if at all).
+
+Tue Jan 20 19:37:53 1998  Jim Kingdon  <kingdon@harvey.cyclic.com>
+
+	* client.c (send_dirent_proc): Don't send nonexistent directories
+	unless noexec.
+	* sanity.sh (modules2): New tests modules2-13 through modules2-18
+	test for this fix.
+
+Mon Jan 19 11:17:51 1998  Jim Kingdon  <kingdon@harvey.cyclic.com>
+
+	* server.c (serve_kopt): New function.
+	(requests): Add "Kopt" request.
+	(kopt): New variable.
+	(serve_is_modified): Write kopts from there into entries.
+	(serve_modified): Call serve_is_modified so we do the same.
+	Declare serve_modified and serve_is_modified.
+	* vers_ts.c (Version_TS): Set ->options even for a dummy ("D"
+	timestamp) entry.
+	* import.c (process_import_file): Check for -k options.
+	* client.c (client_process_import_file): Send Kopt request.
+	(send_fileproc): Likewise, for "cvs add".
+	* sanity.sh: Enable test binwrap3-sub2-add1 for remote.
+	Add -I .cvswrappers to binwrap3-2a; adjust binwrap3-2d
+	accordingly.  Tests for this fix.
+
+Mon Jan 19 08:48:59 1998  Larry Jones  <larry.jones@sdrc.com>
+
+	* sanity.sh (errmsg1): Append test 168 output to log file.
+
+Sat Jan 17 08:01:51 1998  Jim Kingdon  <kingdon@harvey.cyclic.com>
+
+	* sanity.sh (ann-10, ann-11): Don't make assumptions about the
+	number of characters in the username.
+
+Fri Jan 16 15:34:02 1998  Larry Jones  <larry.jones@sdrc.com>
+
+	* diff.c (diff_fileproc): Free label1 and label2 when finished.
+
+	* edit.c (editor_set): Don't free edlist until after we're
+	done using it.
+
+	* rcscmds.c (RCS_merge): Free xrev1 and xrev2 when finished.
+
+	* subr.c (make_message_rcslegal): Don't access uninitialized or
+	unallocated memory; only strip trailing blank lines.
+	* sanity.sh (log-3): Enhance to test this fix.
+
+Fri Jan 16 12:41:03 1998  Jim Kingdon  <kingdon@harvey.cyclic.com>
+
+	* sanity.sh: Add keywordlog to list of tests run by default.
+
+	* rcs.c (RCS_deltas): Don't call cvs_output if length is zero;
+	passing zero length to cvs_output does not mean output zero
+	bytes.  The 27 Dec 1997 change to no longer '\0'-terminate the
+	->text field turned this from a time bomb to a user-visible bug.
+	* sanity.sh (ann): New tests, test for this fix and other annotate
+	behaviors.
+
+Thu Jan 15 23:52:00 1998  Jim Kingdon  <kingdon@harvey.cyclic.com>
+
+	* root.c (root_allow_ok): If inetd.conf didn't specify an
+	--allow-root options at all, we know we are in trouble.  Give a
+	specific error message.
+
+Thu Jan 15 21:24:59 1998  Ian Lance Taylor  <ian@cygnus.com>
+
+	* sanity.sh (dotest_sort): New variant of dotest which sorts the
+	output, for use when the output depends upon details of the file
+	system, typically when doing an import.
+	(rdiff): Use dotest_sort for rdiff-1.
+	(ignore): Use dotest_sort for 188a, 188b, 189d, 190, and 191.
+
+	* sanity.sh: (TESTSHELL): New variable.
+	(editor, info, reserved): Use TESTSHELL in temporary script.
+
+	* sanity.sh (ignore): Do all tests in subdirectory, to avoid
+	conflict between cvsroot and CVSROOT on Windows.
+	(binwrap3, mwrap, info, config): Likewise.
+
+	* sanity.sh (binfiles2): Correct test name binfile2-7-brmod to
+	binfiles2-7-brmod.
+
+	* release.c (release_delete): If __CYGWIN32__ is defined, don't
+ 	worry about mismatched inodes.  This is a hack, but then I think
+ 	the test is rather peculiar anyhow.
+
+Thu Jan 15 16:07:36 1998  Larry Jones  <larry.jones@sdrc.com>
+
+	* sanity.sh (reserved-9): Use ${PROG} instead of "cvs".
+
+Wed Jan 14 15:43:13 1998  Jim Kingdon  <kingdon@harvey.cyclic.com>
+
+	* Split ChangeLog into ChangeLog-97 and ChangeLog.
+	* Makefile.in (DISTFILES): Add ChangeLog-97.
+
+13 Jan 1998  Jim Kingdon
+
+	* client.c: Declare handle_mt.
+
+Tue Jan 13 22:21:30 1998  Jim Kingdon  <kingdon@harvey.cyclic.com>
+
+	* sanity.sh: Add comment about how pwd and /bin/pwd often differ
+	in behavior (but are not guaranteed to).
+
+Tue Jan 13 13:49:53 1998  Ian Lance Taylor  <ian@cygnus.com>
+
+	* sanity.sh: When setting TMPPWD use just pwd, not /bin/pwd.
+
+	* update.c (checkout_file): Don't pass set_time as true to
+	Version_TS if the file is dead.
+	* sanity.sh (modules): Add tests modules-155c6 through
+ 	modules-155c8 to test for above patch (without the above patch,
+ 	modules-155c8 will fail when remote).
+
+Tue Jan 13 10:37:02 1998  Larry Jones  <larry.jones@sdrc.com>
+
+	* client.c (send_modified): Change bufsize and newsize from int
+	to size_t to avoid type clashes in call to read_and_gzip.
+
+Tue Jan 13 10:33:02 1998  Larry Jones  <larry.jones@sdrc.com>
+
+	* zlib.c (read_and_gzip): Set finish to 0; it was uninitialized.
+
+Tue Jan 13 10:26:43 1998  Larry Jones  <larry.jones@sdrc.com>
+
+	* add.c, rcs.c: Plug memory leaks.
+
+Mon Jan 12 10:45:27 1998  Larry Jones  <larry.jones@sdrc.com>
+
+	* server.c (mkdir_p): Don't try to create nameless directories
+	(i.e., given "/foo//bar", don't try to create "/foo/",
+	just "/foo" and "/foo//bar") since it isn't necessary and
+	it fails on some systems in unexpected ways.
+
+1998-01-11  enami tsugutomo  <enami@but-b.or.jp>
+
+	* rcs.c (linevector_copy): Delete lines before overwriting them.
+
+Sat Jan 10 11:05:40 1998  Jim Kingdon  <kingdon@harvey.cyclic.com>
+
+	* cvsrc.c, entries.c, login.c, logmsg.c, myndbm.c, patch.c,
+	release.c, server.c: Check for errors from getline, CVS_FOPEN,
+	fprintf, CVS_UNLINK and fclose.  Note that the new errors are
+	nonfatal.  This is because of conservatism more than because
+	it is always the best thing.
+	* login.c (get_cvs_password): Close the file when done with it.
+	* client.c (notified_a_file): If -1 return from getline, check
+	feof rather than assuming errno is set.
+
+Fri Jan  9 14:38:54 1998  Jim Kingdon  <kingdon@harvey.cyclic.com>
+
+	* server.c (expand_proc): Also output server_dir in
+	"Module-expansion", not just in output_dir ("Created", &c).
+	* sanity.sh (modules2): New tests modules2-9 through modules2-12
+	test for this.
+
+Thu Jan  8 12:56:55 1998  Yasutoshi Hiroe  <hiroe@rgk.ricoh.co.jp>
+
+	* import.c (import): Don't strcat on uninitialized memory.  Fixes
+	possible SIGSEGV with zero-length message.
+
+Tue Jan  6 22:56:29 1998  Jim Kingdon  <kingdon@harvey.cyclic.com>
+
+	* sanity.sh (crerepos): Fix mistaken variable name which caused us
+	not to clean up at the end of the test.
+
+Mon Dec 22 01:40:57 1997  Jim Kingdon  <kingdon@harvey.cyclic.com>
+
+	* add.c (add): Also look for .cvswrappers files.
+	* sanity.sh (binwrap3): New tests binwrap3-2*, binwrap3-sub2-add*
+	test for this.
+
+Tue Jan  6 11:50:38 1998  Jim Kingdon  <kingdon@harvey.cyclic.com>
+
+	* sanity.sh (crerepos): New tests crerepos-8 through crerepos-18
+	test behaviors when mixing repositories.
+
+Sun Jan  4 17:40:22 1998  Jim Kingdon  <kingdon@harvey.cyclic.com>
+
+	* version.c: Change version number to 1.9.23.
+
+	* Version 1.9.22.
+
+
+For older changes see ChangeLog-97.
