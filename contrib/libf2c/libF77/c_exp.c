@@ -3,17 +3,21 @@
 #ifdef KR_headers
 extern double exp(), cos(), sin();
 
- VOID c_exp(r, z) complex *r, *z;
+ VOID c_exp(resx, z) complex *resx, *z;
 #else
 #undef abs
-#include "math.h"
+#include <math.h>
 
-void c_exp(complex *r, complex *z)
+void c_exp(complex *resx, complex *z)
 #endif
 {
-	double expx, zi = z->i;
+double expx;
+complex res;
 
-	expx = exp(z->r);
-	r->r = expx * cos(zi);
-	r->i = expx * sin(zi);
-	}
+expx = exp(z->r);
+res.r = expx * cos(z->i);
+res.i = expx * sin(z->i);
+
+resx->r = res.r;
+resx->i = res.i;
+}

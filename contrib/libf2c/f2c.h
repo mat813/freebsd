@@ -1,6 +1,6 @@
 /* f2c.h file for GNU Fortran run-time library
    Copyright (C) 1998 Free Software Foundation, Inc.
-   Contributed by James Craig Burley.
+   Contributed by James Craig Burley (burley@gnu.org).
 
 This file is part of GNU Fortran.
 

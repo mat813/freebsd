@@ -2,12 +2,16 @@
 
  VOID
 #ifdef KR_headers
-d_cnjg(r, z) doublecomplex *r, *z;
+d_cnjg(resx, z) doublecomplex *resx, *z;
 #else
-d_cnjg(doublecomplex *r, doublecomplex *z)
+d_cnjg(doublecomplex *resx, doublecomplex *z)
 #endif
 {
-	doublereal zi = z->i;
-	r->r = z->r;
-	r->i = -zi;
-	}
+doublecomplex res;
+
+res.r = z->r;
+res.i = - z->i;
+
+resx->r = res.r;
+resx->i = res.i;
+}

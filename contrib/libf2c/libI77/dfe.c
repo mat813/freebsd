@@ -81,7 +81,7 @@ c_dfe(cilist *a)
 	f__fmtbuf=a->cifmt;
 	if(a->cirec <= 0)
 		err(a->cierr,130,"dfe");
-	(void) fseek(f__cf,(long)f__curunit->url * (a->cirec-1),SEEK_SET);
+	fseek(f__cf,(long)f__curunit->url * (a->cirec-1),SEEK_SET);
 	f__curunit->uend = 0;
 	return(0);
 }
@@ -137,10 +137,4 @@ integer e_rdfe(Void)
 	f__init = 1;
 	en_fio();
 	return(0);
-}
-
-integer e_wdfe(Void)
-{
-	f__init = 1;
-	return en_fio();
 }

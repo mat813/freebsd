@@ -12,5 +12,7 @@ int G77_abort_0 (void)
 #endif
 {
 sig_die("Fortran abort routine called", 1);
-return 0;	/* not reached */
+#ifdef __cplusplus
+return 0;
+#endif
 }
