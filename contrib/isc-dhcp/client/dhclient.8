@@ -35,17 +35,34 @@
 .\" Enterprises.  To learn more about the Internet Software Consortium,
 .\" see ``http://www.isc.org/isc''.  To learn more about Vixie
 .\" Enterprises, see ``http://www.vix.com''.
+.\"
+.\" Portions copyright (c) 2000 David E. O'Brien.
+.\" All rights reserved.
+.\" $FreeBSD$
+.\"
 .TH dhclient 8
 .SH NAME
 dhclient - Dynamic Host Configuration Protocol Client
 .SH SYNOPSIS
 .B dhclient
 [
+.B -Ddq1
+]
+[
+.B -cf
+.I config-file
+]
+[
+.B -lf
+.I lease-file
+]
+[
 .B -p
 .I port
 ]
 [
-.B -d
+.B -pf
+.I pidfile
 ]
 [
 .I if0
@@ -116,6 +133,22 @@ are specified on the command line dhclient will identify all network
 interfaces, elimininating non-broadcast interfaces if possible, and
 attempt to configure each interface.
 .PP
+The
+.B -D
+flag causes
+.B dhclient
+to save the script it creates for use in conjunction with
+.B dhclient-script
+in 
+.IR /tmp.
+.PP
+Dhclient will normally run in the foreground until it has configured
+an interface, and then will revert to running in the background.
+To run force dhclient to always run as a foreground process, the
+.B -d
+flag should be specified.  This is useful when running dhclient under
+a debugger, or when running it out of inittab on System V systems.
+.PP
 If dhclient should listen and transmit on a port other than the
 standard (port 68), the
 .B -p
@@ -134,20 +167,38 @@ number specified with the
 flag - if you wish to use alternate port numbers, you must configure
 any relay agents you are using to use the same alternate port numbers.
 .PP
-Dhclient will normally run in the foreground until it has configured
-an interface, and then will revert to running in the background.
-To run force dhclient to always run as a foreground process, the
-.B -d
-flag should be specified.  This is useful when running dhclient under
-a debugger, or when running it out of inittab on System V systems.
+The 
+.B -cf
+flag may be used to change the shell script from the default of
+/sbin/dhclient-script.
+.PP
+The 
+.B -lf
+flag may be used to change the lease output file from the default of
+/var/db/dhclient.leases.
+.PP
+The
+.B -pf
+flag may be used to change the PID file from the default of
+/var/run/dhclient.pid.
+.PP
+The
+.B -q
+flag may be used to reduce the amount of screen output from
+.B dhclient.
+.PP
+The
+.B -1
+flag cause dhclient to try once to get a lease.  If it fails, dhclient exits
+with exit code two.
 .PP
 .SH CONFIGURATION
-The syntax of the dhclient.conf(8) file is discussed seperately.
+The syntax of the dhclient.conf(5) file is discussed separately.
 .SH FILES
-.B ETCDIR/dhclient.conf, DBDIR/dhclient.leases, RUNDIR/dhclient.pid,
-.B DBDIR/dhclient.leases~.
+.B /etc/dhclient.conf, /var/db/dhclient.leases, /var/db/dhclient.leases~.
+.B /var/run/dhclient.pid,
 .SH SEE ALSO
-dhcpd(8), dhcrelay(8), dhclient.conf(5), dhclient.leases(5)
+dhclient.conf(5), dhclient.leases(5), dhclient-script(8)
 .SH AUTHOR
 .B dhclient(8)
 has been written for the Internet Software Consortium
