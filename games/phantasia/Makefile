@@ -5,7 +5,7 @@ SRCS=	main.c fight.c io.c interplayer.c gamesupport.c misc.c phantglobs.c
 DPADD=	${LIBM} ${LIBCURSES} ${LIBTERM} ${LIBCOMPAT}
 LDADD=	-lm -lcurses -ltermlib -lcompat
 HIDEGAME=hidegame
-MAN6=	phantasia.6
+MAN6=	phantasia.0
 CLEANFILES+=map setup setup.o
 
 all: setup phantasia ${MAN6}
