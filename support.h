@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2001-2003
- *	Fraunhofer Institute for Open Communication Systems (FhG Fokus).
+ * Copyright (C) 2004
+ *	Hartmut Brandt.
  *	All rights reserved.
  *
  * Author: Harti Brandt <harti@freebsd.org>
@@ -26,20 +26,46 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * $Begemot: bsnmp/lib/snmppriv.h,v 1.9 2004/08/06 08:46:58 brandt Exp $
+ * $Begemot: bsnmp/lib/support.h,v 1.1 2004/08/06 08:47:59 brandt Exp $
  *
- * Private functions.
+ * Functions that are missing on certain systems. This header file is not
+ * to be installed.
  */
+#ifndef bsnmp_support_h_
+#define bsnmp_support_h_
+
 #include <sys/cdefs.h>
 
-enum asn_err snmp_binding_encode(struct asn_buf *, const struct snmp_value *);
-enum snmp_code snmp_pdu_encode_header(struct asn_buf *, struct snmp_pdu *);
-enum snmp_code snmp_fix_encoding(struct asn_buf *, const struct snmp_pdu *);
-enum asn_err snmp_parse_message_hdr(struct asn_buf *b, struct snmp_pdu *pdu,
-    asn_len_t *lenp);
-enum asn_err snmp_parse_pdus_hdr(struct asn_buf *b, struct snmp_pdu *pdu,
-    asn_len_t *lenp);
+#ifndef HAVE_ERR_H
+void err(int, const char *, ...) __printflike(2, 3) __dead2;
+void errx(int, const char *, ...) __printflike(2, 3) __dead2;
 
-#define DEFAULT_HOST "localhost"
-#define DEFAULT_PORT "snmp"
-#define DEFAULT_LOCAL "/var/run/snmp.sock"
+void warn(const char *, ...) __printflike(1, 2);
+void warnx(const char *, ...) __printflike(1, 2);
+#endif
+
+#ifndef HAVE_STRLCPY
+size_t strlcpy(char *, const char *, size_t);
+#endif
+
+#ifndef HAVE_GETADDRINFO
+
+struct addrinfo {
+	u_int	ai_flags;
+	int	ai_family;
+	int	ai_socktype;
+	int	ai_protocol;
+	struct sockaddr *ai_addr;
+	int	ai_addrlen;
+	struct addrinfo *ai_next;
+};
+#define	AI_CANONNAME	0x0001
+
+int getaddrinfo(const char *, const char *, const struct addrinfo *,
+    struct addrinfo **);
+const char *gai_strerror(int);
+void freeaddrinfo(struct addrinfo *);
+
+#endif
+
+#endif
