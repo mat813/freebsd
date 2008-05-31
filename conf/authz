@@ -53,18 +53,8 @@ releng = peter
 #[/projects]
 #* = rw
 
-# /stable/* will be turned on soon
-#[/stable/4]
-#@committers = rw
-#
-#[/stable/5]
-#@committers = rw
-#
-#[/stable/6]
-#@committers = rw
-#
-#[/stable/7]
-#@committers = rw
+[/stable]
+@committers = rw
 
 # Static tags, no commits except by re@
 #[/release]
