@@ -48,6 +48,8 @@ def is_binary(s):
 
 def mime_ok(mime):
   "Return True if we accept the mime type"
+  if mime == 'unspecified':
+    return True
   if mime.startswith('text/'):
     return True
   if mime.startswith('application/'):
@@ -98,7 +100,7 @@ class ChangeReceiver(delta.Editor):
     # POLICY: mime-type must be unset, text/*, application/* or image/*
     mimetype = fs.node_prop(self.txn_root, path, core.SVN_PROP_MIME_TYPE)
     if not mimetype:
-      mimetype = "text/plain (implicit)"
+      mimetype = 'unspecified'
     if not mime_ok(mimetype):
       self.do_fail('Path "%s" has an unknown mime type "%s"\n' % (path, mimetype))
 
