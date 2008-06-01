@@ -61,10 +61,10 @@ releng = peter
 #@releng = rw
 
 # so/re can commit to errata/security branches
-#[/releng]
+[/releng]
 #@so = rw
 #@releng = rw
-
+peter = rw
 
 # All vendor branch activity is disabled for now.
 #[/vendor]
