@@ -138,9 +138,9 @@ def dump_file(fs_ptr, fs_root, rev, svnpath, cvspath, author, date, pool, workpa
     if len(data) < core.SVN_STREAM_CHUNK_SIZE:
       break
   # Expand keywords
-  if kw == r'FreeBSD=%H':
-    old = '$' + 'FreeBSD$'
-    string = string.replace(old, str)
+#  if kw == r'FreeBSD=%H':
+#    old = '$' + 'FreeBSD$'
+#    string = string.replace(old, str)
   cvsfile = os.path.join(workpath, cvspath)
 #  sys.stdout.write('File contents:\n=========\n')
 #  sys.stdout.write(string)
@@ -289,7 +289,7 @@ def exportrev(pool, fs_ptr, rev, cvspath):
     if not os.path.isdir(workpath):
       os.makedirs(workpath)
     if not os.path.isdir(os.path.join(workpath, 'src')):
-      failed = do_cvs(workpath, '', "cvs -q co %s -l src" % uptag)
+      failed = do_cvs(workpath, '', "cvs -Rq co %s src" % uptag)
       assert not failed
     # at this point, the top directory and /src should exist
     #print p, path, k
@@ -324,25 +324,25 @@ def exportrev(pool, fs_ptr, rev, cvspath):
   core.svn_pool_destroy(subpool)
 
 # Loop for the export range
-def export(pool, repos_path, askrev, cvspath):
+def export(pool, repos_path, cvspath):
   repos_path = core.svn_path_canonicalize(repos_path)
   fs_ptr = repos.fs(repos.open(repos_path, pool))
-  curr_rev = fs.youngest_rev(fs_ptr)
-  if askrev:
-    exportrev(pool, fs_ptr, int(askrev), cvspath)
-  else:
-    for rev in xrange(1, curr_rev + 1):
-      print "===========\nExporting change %d\n===========" % rev
-      if not os.path.isfile('/tmp/do_export2.txt'):
-	print '/tmp/do_export.txt does not exist'
-	sys.exit(0)
-      exportrev(pool, fs_ptr, rev, cvspath)
+  os.environ['CVSROOT'] = '/r/ncvs'
+  while True:
+    if not os.path.isfile('/tmp/do_export.txt'):
+      sys.exit('/tmp/do_export.txt does not exist')
+    curr_rev = fs.youngest_rev(fs_ptr)
+    last_rev = int(fs.revision_prop(fs_ptr, 0, 'fbsd:lastexp'))
+    if last_rev < curr_rev:
+      print '%d %s' % (last_rev, curr_rev)
+      rev = '%d' % (last_rev + 1)
+      print '==========> export rev ' + rev
+      exportrev(pool, fs_ptr, last_rev + 1, cvspath)
+      fs.change_rev_prop(fs_ptr, 0, 'fbsd:lastexp', rev)
+      continue
+    print "."
+    time.sleep(15)
+
 
 if __name__ == '__main__':
-  #assert len(sys.argv) == 3
-  #Under normal circumstances, called once per commit to export the changes in question.
-  #core.run_app(export, sys.argv[1], int(sys.argv[2]), '/s/peter/work/cvs')
-  # test repo
-  core.run_app(export, '/s/repo', 0, '/s/peter/work/cvs2')
-  # freebsd repo
-  #core.run_app(export, '/s/peter/svn/repo', 0, '/s/peter/work/cvs')
+  core.run_app(export, '/r/svnmirror/base', '/r/svn2cvs/cvs')
