@@ -37,8 +37,8 @@
 # keep this sorted, and in sync with ncvs/CVSROOT/avail
 #committers = peter
 committers = ache, adrian, akiyama, alc, alfred, ambrisko, andre, andreas, anholt, antoine, ariff, attilio, avatar, babkin, bakul, bde, benjsc, benno, billf, bmah, bmilekic, bms, brian, brooks, brueffer, bruno, bushman, bz, ceri, charnier, cognet, cokane, cperciva, cracauer, csjp, daichi, damien, darrenr, das, davidc, davidch, davidxu, dd, dds, deischen, delphij, des, dfr, dg, dhartmei, dmlb, dougb, dumbbell, dwhite, dwmalone, ed, edwin, eik, eivind, emaste, emax, fanf, fjoe, flz, gad, gallatin, ghelmer, gibbs, glebius, gnn, gonzo, gordon, green, grehan, grog, gshapiro, guido, harti, hm, hmp, hoek, hosokawa, hrs, hsu, iedowse, ikob, imp, imura, iwasaki, jake, jasone, jayanth, jb, jeff, jfv, jhay, jhb, jinmei, jkh, jkim, jkoshy, jlemon, jls, jmallett, jmg, jmz, joe, joerg, jon, julian, kaiw, kan, kato, ken, kensmith, kevlo, kib, kientzle, kmacy, krion, kris, kuriyama, le, luigi, lulf, luoqi, marcel, marius, markm, marks, markus, matk, matteo, matusita, mav, maxim, mbr, mckay, mckusick, mdodd, mlaier, mohans, motoyuki, mp, mpp, mr, mtm, murray, mux, n_hibma, netchild, nik, nyan, obrien, oleg, olli, onoe, pb, pdeuskar, peadar, peter, phantom, philip, phk, piso, pjd, ps, qingli, rafan, raj, rdivacky, remko, rik, rink, roberto, rodrigc, rpaulo, rrs, rse, rsm, ru, rwatson, sah, sam, sanpei, scf, schweikh, scottl, se, sephe, sepotvin, shiba, silby, simokawa, simon, sobomax, sos, ssouhlal, stefanf, sumikawa, suz, syrinx, tackerman, takawata, tanimura, thomas, thompsa, ticso, trhodes, truckman, twinterg, ume, ups, weongyo, wes, wilko, wkoszek, wollman, wosch, wpaul, wsalamon, yar, yongari
-so = peter
-releng = peter
+so = cperciva, rwatson, simon
+releng = kensmith
 
 [/]
 * = r
@@ -62,8 +62,8 @@ releng = peter
 
 # so/re can commit to errata/security branches
 [/releng]
-#@so = rw
-#@releng = rw
+@so = rw
+@releng = rw
 peter = rw
 
 # All vendor branch activity is disabled for now.
@@ -83,3 +83,4 @@ peter = rw
 # config stuff.
 [/svnadmin]
 peter = rw
+@committers = rw
