@@ -5,6 +5,7 @@
 
 import string
 import sys
+import re
 from svn import core, fs, delta, repos
 
 # POLICY: mime-type must be unset, text/*, application/* or image/*
