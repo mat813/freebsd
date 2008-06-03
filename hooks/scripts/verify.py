@@ -96,6 +96,16 @@ class ChangeReceiver(delta.Editor):
     changed, path = file_baton
     if not changed:
       return
+    # exempt vendor imports from any checking for now
+    if path.startswith('vendor'):
+      return
+    # exempt contrib areas too.
+    if path.startswith('head/contrib'):
+      return
+    # and in stable/*/contrib
+    r1 = re.compile(r'stable/\d+/contrib')
+    if r1.match(path):
+      return
 
     # POLICY: mime-type must be unset, text/*, application/* or image/*
     mimetype = fs.node_prop(self.txn_root, path, core.SVN_PROP_MIME_TYPE)
