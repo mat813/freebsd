@@ -66,8 +66,8 @@ TXN="$2"
 # Check for "Approved by" requirements first
 approvecheck.pl "$REPO" "$TXN" || exit 1
 
-# Check for access to directories.
-# access-check.py
+# Require that commits only touch valid paths.
+pathcheck.pl "$REPO" "$TXN" || exit 1
 
 # Safety belt size check.  The seatbelt is 1MB.
 # People will hit this regularly.
