@@ -1,0 +1,32 @@
+# Configuration file for checking approvals.
+#
+# If you want to commit to specific module/branch defined in this file,
+# you should get approval from appropriate party.
+#
+# This file is maintained by core@FreeBSD.org.
+#
+# Format is tab separated.
+# Use # as first character in a line for comment.
+#
+# You should satisfy all of lines which matching to paths
+# to commit.
+#
+# 1st column is regexp for path name.
+# 2nd column is regexp used with "Approved by:[\t ]*" line.
+#
+# $FreeBSD$
+#
+#^head/				re
+#^stable/7/			re
+#^stable/6/			re
+#^releng/7.1/			re
+^releng/7.0/			(security-officer|so)
+#^releng/6.4/			re
+^releng/6.[0-3]/		(security-officer|so)
+^releng/5.[0-5]/		(security-officer|so)
+^releng/4.[3-9]/		(security-officer|so)
+^releng/4.1[01]/		(security-officer|so)
+^CVSROOT/avail			core
+^svnadmin/conf/approvers	(core|re)
+^svnadmin/conf/access		core
+^head/LOCKS			core
