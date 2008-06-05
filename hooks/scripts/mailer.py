@@ -456,12 +456,15 @@ class PropChange(Messenger):
     actions = { 'A': 'added', 'M': 'modified', 'D': 'deleted' }
     for (group, param_tuple), params in self.groups.items():
       self.output.start(group, params)
-      self.output.write('Author: %s\n'
-                        'Revision: %s\n'
+      self.output.write('Author: %s' % self.author)
+      if os.environ.has_key('SVN_COMMIT_ATTRIB'):
+        self.output.write(' (%s committer)' % os.environ['SVN_COMMIT_ATTRIB'])
+      self.output.write('\n'
+			'Revision: %s\n'
                         'Property Name: %s\n'
                         'Action: %s\n'
                         '\n'
-                        % (self.author, self.repos.rev, self.propname,
+                        % (self.repos.rev, self.propname,
                            actions.get(self.action, 'Unknown (\'%s\')' \
                                        % self.action)))
       if self.action == 'A' or not actions.has_key(self.action):
@@ -566,9 +569,11 @@ class Lock(Messenger):
     for (group, param_tuple), (params, paths) in self.groups.items():
       self.output.start(group, params)
 
-      self.output.write('Author: %s\n'
-                        '%s paths:\n' %
-                        (self.author, self.do_lock and 'Locked' or 'Unlocked'))
+      self.output.write('Author: %s' % self.author)
+      if os.environ.has_key('SVN_COMMIT_ATTRIB'):
+        self.output.write(' (%s committer)' % os.environ['SVN_COMMIT_ATTRIB'])
+      self.output.write('\n%s paths:\n' %
+                        (self.do_lock and 'Locked' or 'Unlocked'))
 
       self.dirlist.sort()
       for dir in self.dirlist:
@@ -979,9 +984,10 @@ class TextCommitRenderer:
 
     w = self.output.write
 
-    w('Author: %s\nDate: %s\nNew Revision: %s\n' % (data.author,
-                                                      data.date,
-                                                      data.rev))
+    w('Author: %s' % data.author)
+    if os.environ.has_key('SVN_COMMIT_ATTRIB'):
+      w(' (%s committer)' % os.environ['SVN_COMMIT_ATTRIB'])
+    w('\nDate: %s\nNew Revision: %s\n' % (data.date, data.rev))
 
     if data.commit_url:
       w('URL: %s\n\n' % data.commit_url)
