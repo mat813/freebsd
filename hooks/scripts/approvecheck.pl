@@ -58,7 +58,7 @@ sub read_approvers {
 		while (<APP>) {
 			chomp;
 			next if (/^#/);
-			my ($path, $rev) = split(/\t+/, $_, 3);
+			my ($path, $rev) = split(/\t+/, $_, 2);
 			if ($rev) {
 				push @Approvers, { path => $path,
 						   app => $rev };
