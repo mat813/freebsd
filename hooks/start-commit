@@ -63,6 +63,11 @@ CAPS="$3"
 
 . /s/svn/base/hooks/scripts/env.sh
 
+if [ "x$SVN_READONLY" != x ]; then
+  echo "You do not appear to have an active commit bit!" 1>&2
+  exit 1
+fi
+
 # check for mergeinfo
 checkcaps.sh "$CAPS" || exit 1
 
