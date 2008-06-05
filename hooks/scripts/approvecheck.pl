@@ -98,7 +98,7 @@ sub check_one {
 		return 0;
 	}
 	printf "$$: log not matched (%s, %s)\n", $log, $r->{app} if ($debug);
-	printf "**** You need \"Approved by: %s\" line in your log entry.\n",
+	printf STDERR "**** You need \"Approved by: %s\" line in your log entry.\n",
 		$r->{app};
 	return 1;
 }
