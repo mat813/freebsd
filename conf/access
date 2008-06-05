@@ -1,0 +1,242 @@
+#
+# $FreeBSD$
+#
+# Please try to keep the handbook (contrib/chapter.sgml authors.ent
+# staff/chapter.sgml) in in sync with this.
+#
+#	KEEP ALPHABETICALLY SORTED!!!
+#	KEEP ALPHABETICALLY SORTED!!!
+#	KEEP ALPHABETICALLY SORTED!!!
+#
+# When adding a new committer to this file, please make sure to
+# include the following information in the commit message:
+#   (1) Who the commit bit was approved by ("Approved by: core").
+#   (2) The full name of the person.
+#   (3) In brief, what they will be working on (a couple of sentences).
+#
+# Changes to email forwards can be made without core's approval.  Please
+# use "Approved by: core (implicit)" to that type of commits.
+#
+ache
+adrian
+akiyama
+alc
+alfred
+ambrisko
+andre
+andreas
+anholt
+antoine
+ariff
+attilio
+avatar
+babkin
+bakul
+bde
+benjsc
+benno
+billf
+bmah
+bmilekic
+bms
+brian		freebsd-committers@Awfulhak.org
+brooks
+brueffer
+bruno
+bushman
+bz
+ceri
+charnier
+cognet
+cokane
+cperciva
+cracauer
+csjp
+daichi
+damien
+darrenr
+das
+davidc
+davidch
+davidxu
+dd
+dds
+deischen
+delphij
+des
+dfr
+dg
+dhartmei
+dmlb
+dougb
+dumbbell
+dwhite
+dwmalone	dwmalone=freebsd-committers@maths.tcd.ie
+ed
+edwin
+eik
+eivind
+emaste
+emax
+fanf
+fjoe
+flz
+gad
+gallatin
+ghelmer
+gibbs
+glebius
+gnn
+gonzo
+gordon
+green
+grehan
+grog
+gshapiro	gshapiro+freebsd-cvs-committers@gshapiro.net
+guido
+harti
+hm
+hmp
+hoek
+hosokawa
+hrs
+hsu
+iedowse
+ikob
+imp
+imura
+iwasaki
+jake
+jasone
+jayanth
+jb
+jeff
+jfv
+jhay
+jhb
+jinmei
+jkh
+jkim
+jkoshy
+jlemon
+jls
+jmallett
+jmg
+jmz
+joe
+joerg	freebsd-org@uriah.heep.sax.de
+jon
+julian
+kaiw
+kan
+kato
+ken
+kensmith
+kevlo
+kib
+kientzle
+kmacy
+krion
+kris
+kuriyama
+le
+luigi
+lulf
+luoqi
+marcel
+marius
+markm
+marks
+markus
+matk
+matteo
+matusita
+mav
+maxim
+mbr
+mckay
+mckusick
+mdodd
+mlaier
+mohans
+motoyuki
+mp
+mpp
+mr
+mtm
+murray
+mux
+n_hibma	devnull
+netchild
+nik
+nyan
+obrien
+oleg
+olli
+onoe
+pb
+pdeuskar
+peadar
+peter	peter@wemm.org
+phantom
+philip
+phk
+piso
+pjd
+ps
+qingli
+rafan
+raj
+rdivacky
+remko
+rik
+rink
+roberto
+rodrigc
+rpaulo
+rrs
+rse
+rsm
+ru
+rwatson bb+lists.freebsd.cvs-committers@cyrus.watson.org
+sah
+sam
+sanpei
+scf
+schweikh
+scottl
+se
+sephe
+sepotvin
+shiba
+silby
+simokawa
+simon
+sobomax
+sos	commit@deepcore.dk
+ssouhlal
+stefanf
+sumikawa
+suz
+syrinx
+tackerman
+takawata
+tanimura
+thomas
+thompsa
+ticso
+trhodes
+truckman
+twinterg
+ume
+ups
+weongyo
+wes	wes@opensail.org
+wilko	freebsd-commits@freebie.xs4all.nl
+wkoszek
+wollman
+wosch
+wpaul
+wsalamon
+yar
+yongari
