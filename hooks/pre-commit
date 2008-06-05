@@ -63,6 +63,9 @@ TXN="$2"
 
 #crash.sh || exit 1
 
+# Check for "Approved by" requirements first
+approvecheck.pl "$REPO" "$TXN" || exit 1
+
 # Check for access to directories.
 # access-check.py
 
