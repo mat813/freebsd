@@ -577,7 +577,7 @@ class Lock(Messenger):
 
       self.dirlist.sort()
       for dir in self.dirlist:
-        self.output.write('   %s\n\n' % dir)
+        self.output.write('  %s\n\n' % dir)
 
       if self.do_lock:
         self.output.write('Comment:\n%s\n' % (self.lock.comment or ''))
@@ -994,7 +994,10 @@ class TextCommitRenderer:
     else:
       w('\n')
 
-    w('Log:\n%s\n\n' % data.log.strip())
+    w('Log:\n')
+    for line in data.log.splitlines():
+      w('  %s\n' % line.rstrip())
+    w('\n')
 
     # print summary sections
     self._render_list('Added', data.added_data)
@@ -1037,7 +1040,7 @@ class TextCommitRenderer:
           props = '   (props changed)'
       else:
         props = ''
-      w('   %s%s%s\n' % (d.path, is_dir, props))
+      w('  %s%s%s\n' % (d.path, is_dir, props))
       if d.copied:
         if is_dir:
           text = ''
@@ -1045,7 +1048,7 @@ class TextCommitRenderer:
           text = ', changed'
         else:
           text = ' unchanged'
-        w('      - copied%s from r%d, %s%s\n'
+        w('     - copied%s from r%d, %s%s\n'
           % (text, d.base_rev, d.base_path, is_dir))
 
   def _render_diffs(self, diffs, section_header):
@@ -1056,7 +1059,11 @@ class TextCommitRenderer:
     w = self.output.write
     section_header_printed = False
 
+    difflimit = 1000
+    linecount = 1
     for diff in diffs:
+      if linecount > difflimit:
+        break
       if not diff.diff and not diff.diff_url:
         continue
       if not section_header_printed:
@@ -1092,8 +1099,13 @@ class TextCommitRenderer:
         continue
 
       for line in diff.content:
+        linecount += 1
         w(line.raw)
+        if linecount > difflimit:
+          break
 
+    if linecount > 10:
+      w('\n*** DIFF OUTPUT TRUNCATED AT %d LINES ***\n' % difflimit)
 
 class Repository:
   "Hold roots and other information about the repository."
