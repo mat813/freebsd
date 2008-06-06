@@ -1104,7 +1104,7 @@ class TextCommitRenderer:
         if linecount > difflimit:
           break
 
-    if linecount > 10:
+    if linecount > difflimit:
       w('\n*** DIFF OUTPUT TRUNCATED AT %d LINES ***\n' % difflimit)
 
 class Repository:
