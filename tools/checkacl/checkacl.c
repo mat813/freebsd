@@ -34,7 +34,6 @@
 
 
 static char username[32];
-static char linebuf[1024];
 static char committag[256];
 
 static void
@@ -133,7 +132,7 @@ main(int argc, char *argv[])
 				writeable = 1;
 	}
 	if (!writeable)
-		printf("SVN_READONLY=y\n");
+		printf("export SVN_READONLY=y\n");
 
 	fp = fopen(ACCESS, "r");
 	if (fp == NULL) {
@@ -176,13 +175,13 @@ main(int argc, char *argv[])
 		}
 #endif
 		if (karma != 0) {
-			printf("%s\n", committag);
+			printf("export %s\n", committag);
 		}
 	}
 		
 	if (karma == 0) {
 		/* If still zero, its a readonly access */
-		printf("SVN_READONLY=y\n");
+		printf("export SVN_READONLY=y\n");
 	}
 	return (0);
 }
