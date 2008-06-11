@@ -276,6 +276,12 @@ def exportrev(pool, fs_ptr, rev, cvspath):
 
   for k, p in editor.changes:
     #print 'Path ', p
+    if p == 'svnadmin/conf/access':
+      path = 'CVSROOT'
+      workpath = 'CVSROOT/access'
+      dump_file(fs_ptr, fs_root, rev, p, path, author, date, subpool, workpath)
+      pc[workpath] = 'CVSROOT'
+      continue
     (path, tag) = map2cvs(p)
     if not path:
       continue
