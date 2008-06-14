@@ -29,28 +29,23 @@
 #include <syslog.h>
 #include <fcntl.h>
 
-#define ACCESS		"/s/svn/base/conf/access"
+#define SVNROOT		"/s/svn"
+#define BASEACCESS	SVNROOT "/base/conf/access"
+/* Access cvs access files over nfs for now */
 #define DOCACCESS	"/home/dcvs/CVSROOT/access"
 #define PORTSACCESS	"/home/pcvs/CVSROOT/access"
 
 #define NOCOMMIT	"/etc/nocommit"
-#define LOCALNOCOMMIT	"/s/svn/conf/nocommit"
 
 static const char *env[] = {
 	"PATH=" _PATH_DEFPATH,
 	"SHELL=" _PATH_BSHELL,
 	"HOME=/",
-	NULL,		/* For $LOGNAME */
-	NULL,		/* For $USER */
-	NULL,		/* for committag */
 	NULL
 };
 
 static char username[32];
 static char linebuf[1024];
-static char committag[256];
-static char lognamebuf[128];
-static char usernamebuf[128];
 
 static void
 msg(const char *fmt, ...)
@@ -126,20 +121,7 @@ main(int argc, char *argv[])
 	int ngroups;
 	int karma;
 	int shellkarma;
-#ifdef PORTSACCESS
-	int portskarma;
-#endif
-#ifdef DOCACCESS
-	int dockarma;
-#endif
-	const char *comma;
 
-#ifdef PORTSACCESS
-	portskarma = 0;
-#endif
-#ifdef DOCACCESS
-	dockarma = 0;
-#endif
 	karma = 0;
 	shellkarma = 0;
 	openlog("svnssh", LOG_PID | LOG_NDELAY, LOG_AUTH);
@@ -155,10 +137,6 @@ main(int argc, char *argv[])
 
 	/* save in a static buffer */
 	strlcpy(username, pw->pw_name, sizeof(username));
-
-	/* Set up environment variables so that svn doesn't use getlogin() */
-	snprintf(lognamebuf, sizeof(lognamebuf), "LOGNAME=%s", username);
-	snprintf(usernamebuf, sizeof(usernamebuf), "USER=%s", username);
 
 	ngroups = getgroups(NGROUPS_MAX, mygroups);
 	if (ngroups > 0) {
@@ -180,7 +158,7 @@ main(int argc, char *argv[])
 	    strcmp("svnssh",  argv[0]) != 0 ||
 	    strcmp("-c",         argv[1]) != 0 ||
 	    strcmp("svnserve -t", argv[2]) != 0) {
-		if (shellkarma)
+		if (shellkarma)		/* Allow any command */
 			shell(argv, 0);
 		syslog(LOG_INFO, "invalid args for svn server: %s, argc=%d", username, argc);
 		msg("Invalid arguments for svnserve");
@@ -193,10 +171,8 @@ main(int argc, char *argv[])
 		usage();
 	}
 
-/* XXX root parsing gone for now. */
-/* XXX reimplement! */
-	if (stat("/s/svn", &st) < 0) {
-		msg("Cannot stat %s", "/s/svn");
+	if (stat(SVNROOT, &st) < 0) {
+		msg("Cannot stat %s", SVNROOT);
 		exit(1);
 	}
 	repogid = st.st_gid;
@@ -205,7 +181,7 @@ main(int argc, char *argv[])
 		exit(1);
 	}
 
-	fp = fopen(LOCALNOCOMMIT, "r");
+	fp = fopen(NOCOMMIT, "r");
 	if (fp != NULL) {
 		msg("Sorry, commits temporarily locally disabled.");
 		while (fgets(linebuf, sizeof(linebuf), fp) != NULL)
@@ -214,54 +190,29 @@ main(int argc, char *argv[])
 		exit(1);
 	}
 
-	fp = fopen(ACCESS, "r");
+	fp = fopen(BASEACCESS, "r");
 	if (fp == NULL) {
-		msg("Cannot open %s", ACCESS);
+		msg("Cannot open %s", BASEACCESS);
 		exit(1);
 	} else {
 		karma += karmacheck(fp, pw->pw_name);
 		fclose(fp);
 	}
 #ifdef DOCACCESS
-	if (karma == 0 && (fp = fopen(DOCACCESS, "r")) != NULL) {
-		dockarma += karmacheck(fp, pw->pw_name);
+	/* Allow for failures due to NFS */
+	if ((fp = fopen(DOCACCESS, "r")) != NULL) {
+		karma += karmacheck(fp, pw->pw_name);
 		fclose(fp);
 	}
 #endif
 #ifdef PORTSACCESS
-	if (karma == 0 && (fp = fopen(PORTSACCESS, "r")) != NULL) {
-		portskarma += karmacheck(fp, pw->pw_name);
+	/* Allow for failures due to NFS */
+	if ((fp = fopen(PORTSACCESS, "r")) != NULL) {
+		karma += karmacheck(fp, pw->pw_name);
 		fclose(fp);
 	}
 #endif
 
-	if (karma == 0) {
-		strcpy(committag, "SVN_COMMIT_ATTRIB=");
-		comma = "";
-#ifdef DOCACCESS
-		if (dockarma > 0) {
-			strcat(committag, comma);
-			strcat(committag, "doc");
-			comma = ",";
-			karma += dockarma;
-		}
-#endif
-#ifdef PORTSACCESS
-		if (portskarma > 0) {
-			strcat(committag, comma);
-			strcat(committag, "ports");
-			comma = ",";
-			karma += portskarma;
-		}
-#endif
-		if (karma == 0) {
-			/* If still zero, its a readonly access */
-			strcpy(committag, "SVN_READONLY=y");
-		}
-		env[5] = committag;
-			
-	}
-		
 	if (karma > 0) {
 		/* set up read/write */
 		if (setgid(repogid) < 0) {
@@ -269,8 +220,6 @@ main(int argc, char *argv[])
 			exit(1); 
 		}
 	}
-	env[3] = lognamebuf;
-	env[4] = usernamebuf;
 
 	/* revoke suid-root */
 	if (setuid(getuid()) < 0) {
@@ -290,8 +239,8 @@ main(int argc, char *argv[])
 	closelog();
 
 	if (karma > 0)
-		execle("/usr/local/bin/svnserve", "svnserve", "-t", "-r", "/s/svn", NULL, env);
+		execle("/usr/local/bin/svnserve", "svnserve", "-t", "-r", SVNROOT, NULL, env);
 	else
-		execle("/usr/local/bin/svnserve", "svnserve", "-t", "-r", "/s/svn", "-R", NULL, env);
+		execle("/usr/local/bin/svnserve", "svnserve", "-t", "-r", SVNROOT, "-R", NULL, env);
 	err(1, "execle: svnserve");
 }
