@@ -122,6 +122,7 @@ main(int argc, char *argv[])
 	int karma;
 	int shellkarma;
 
+	umask(002);
 	karma = 0;
 	shellkarma = 0;
 	openlog("svnssh", LOG_PID | LOG_NDELAY, LOG_AUTH);
