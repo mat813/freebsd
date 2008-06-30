@@ -10,23 +10,21 @@ import popen2
 import tempfile
 from svn import core, fs, delta, repos
 
+do_keywords = False
 
 # SVN's API structure is to do callbacks to a class to get notifications
 class ChangeReceiver(delta.Editor):
-  def __init__(self, fs_root, base_root, rev, fs_ptr, pool):
+  def __init__(self, fs_root, base_root, rev, fs_ptr, pool, do_kw):
     self.fs_root = fs_root
     self.base_root = base_root
     self.fs_ptr = fs_ptr
     self.rev = int(rev)
     self.pool = pool
+    self.do_kw = do_kw
     self.changes = []
 
   def delete_entry(self, path, revision, parent_baton, pool):
-    ### need more logic to detect 'replace'
-    if fs.is_dir(self.base_root, '/' + path):
-      pass
-    else:
-      self.changes.append(['D', path])
+    self.changes.append(['D', path])
 
   def add_file(self, path, parent_baton,
                copyfrom_path, copyfrom_revision, file_pool):
@@ -44,7 +42,8 @@ class ChangeReceiver(delta.Editor):
 
   def change_file_prop(self, file_baton, name, value, pool):
     text_mod, prop_mod, path = file_baton
-    file_baton[1] = 'U'
+    if self.do_kw and name == core.SVN_PROP_KEYWORDS:
+      file_baton[1] = 'U'
 
   def close_file(self, file_baton, text_checksum):
     text_mod, prop_mod, path = file_baton
@@ -122,25 +121,27 @@ def do_cvs(cvspath, dir, cmd):
 
 # Dump a file from svn into cvs.  This has to apply the delta to the previous rev.
 def dump_file(fs_ptr, fs_root, rev, svnpath, cvspath, author, date, pool, workpath):
-  kw = fs.node_prop(fs_root, svnpath, core.SVN_PROP_KEYWORDS)
-  if not kw:
-    kw = ''
-  str = '$' + 'FreeBSD: %s %s %s %s $' % (cvspath, rev, date, author)
-  #str = '$' + 'FreeBSDId: %s %s %s %s $' % (cvspath, rev, date, author)
+  if do_keywords:
+    kw = fs.node_prop(fs_root, svnpath, core.SVN_PROP_KEYWORDS)
+    if not kw:
+      kw = ''
+    str = '$' + 'FreeBSD: %s %s %s %s $' % (cvspath, rev, date, author)
+    #str = '$' + 'FreeBSDId: %s %s %s %s $' % (cvspath, rev, date, author)
     
-  print 'Author: ' + author
   subpool = core.svn_pool_create(pool)
   stream = core.Stream(fs.file_contents(fs_root, svnpath, subpool))
-  string = ""
+  str_list = []
   while 1:
     data = stream.read(core.SVN_STREAM_CHUNK_SIZE)
-    string += data
+    str_list.append(data)
     if len(data) < core.SVN_STREAM_CHUNK_SIZE:
       break
+  string = ''.join(str_list)
   # Expand keywords
-#  if kw == r'FreeBSD=%H':
-#    old = '$' + 'FreeBSD$'
-#    string = string.replace(old, str)
+  if do_keywords:
+    if kw == r'FreeBSD=%H':
+      old = '$' + 'FreeBSD$'
+      string = string.replace(old, str)
   cvsfile = os.path.join(workpath, cvspath)
 #  sys.stdout.write('File contents:\n=========\n')
 #  sys.stdout.write(string)
@@ -241,7 +242,7 @@ def exportrev(pool, fs_ptr, rev, cvspath):
   # Connect up to the revision
   fs_root = fs.revision_root(fs_ptr, rev, subpool)
   base_root = fs.revision_root(fs_ptr, rev - 1, subpool)
-  editor = ChangeReceiver(fs_root, base_root, rev, fs_ptr, subpool)
+  editor = ChangeReceiver(fs_root, base_root, rev, fs_ptr, subpool, do_keywords)
   e_ptr, e_baton = delta.make_editor(editor, subpool)
   repos.dir_delta(base_root, '', '', fs_root, '', e_ptr, e_baton, authz_cb, 0, 1, 0, 0, subpool)
 
@@ -252,6 +253,7 @@ def exportrev(pool, fs_ptr, rev, cvspath):
   if author == 'davidg':
     author = 'dg'
   os.environ['CVS_AUTHOR'] = author
+  print 'Author: ' + author
 
   # Date
   date = fs.revision_prop(fs_ptr, rev, core.SVN_PROP_REVISION_DATE)
@@ -276,9 +278,10 @@ def exportrev(pool, fs_ptr, rev, cvspath):
 
   for k, p in editor.changes:
     #print 'Path ', p
+    # Hack, hack
     if p == 'svnadmin/conf/access':
-      path = 'CVSROOT'
-      workpath = 'CVSROOT/access'
+      path = 'CVSROOT/access'
+      workpath = cvspath
       dump_file(fs_ptr, fs_root, rev, p, path, author, date, subpool, workpath)
       pc[workpath] = 'CVSROOT'
       continue
@@ -333,10 +336,7 @@ def exportrev(pool, fs_ptr, rev, cvspath):
 def export(pool, repos_path, cvspath):
   repos_path = core.svn_path_canonicalize(repos_path)
   fs_ptr = repos.fs(repos.open(repos_path, pool))
-  os.environ['CVSROOT'] = '/r/ncvs'
   while True:
-    if not os.path.isfile('/tmp/do_export.txt'):
-      sys.exit('/tmp/do_export.txt does not exist')
     curr_rev = fs.youngest_rev(fs_ptr)
     last_rev = int(fs.revision_prop(fs_ptr, 0, 'fbsd:lastexp'))
     if last_rev < curr_rev:
@@ -351,4 +351,8 @@ def export(pool, repos_path, cvspath):
 
 
 if __name__ == '__main__':
+  os.environ['CVSROOT'] = '/r/ncvs'
   core.run_app(export, '/r/svnmirror/base', '/r/svn2cvs/cvs')
+  # test rig
+  #os.environ['CVSROOT'] = '/home/peter/exp/cvs'
+  #core.run_app(export, '/home/peter/exp/svn', '/home/peter/exp/co')
