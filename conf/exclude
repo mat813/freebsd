@@ -1,0 +1,20 @@
+#
+# List of path prefixes that we relax the ID keyword checks for.
+# By "relax", it means that we won't fail a commit if isn't present.
+# Everything else must still be in order though.
+#
+# These paths are used by verify.py and are in canonical form, after
+# head/, stable/*/ etc is stripped off.
+#
+# Note that we exclude all the contrib stuff because there is no easy way to
+# differentiate an import vs a commit.
+#
+# These are python style regexps.
+#
+# $FreeBSD$
+# 
+contrib/[^/]+/
+cddl/contrib/[^/]+/
+crypto/[^/]+/
+sys/contrib/[^/]+/
+sys/cddl/contrib/[^/]+/
