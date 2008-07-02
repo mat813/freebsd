@@ -1,0 +1,13 @@
+# $FreeBSD$
+
+# A list of current mentee login names and their mentors.  This list is not 
+# used for anything, but serves as a place to commit to in order to
+# "release" a mentee from mentorship since svn cannot do forced commits.
+
+# The full list of mentor->mentee relationships including historical
+# entries is in head/share/misc/committers-src.dot
+
+# Sort by mentee login name.
+
+# Mentee	Mentor		Optional comment
+peter		albert
