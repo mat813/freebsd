@@ -16,7 +16,6 @@ from svn import core, fs, delta, repos
 # POLICY: if a file is binary, then it must have mime application/* or image/*
 # POLICY: if a file does not have fbsd:nokeywords, or is binary then svn:keywords must be set
 # POLICY: if svn:keywords is set, $ FreeBSD $ must be present and condensed.
-# POLICY: If a file has text/*, then it must have eol-style
 
 
 text_characters = "".join(map(chr, range(32, 127)) + list("\n\r\t\b"))
@@ -68,11 +67,11 @@ def check_keywords(s, exempt):
 
 # List of directories that we do keyword checking in
 kw_dirs = [
-  r'svnadmin/',
-  r'head/',
-  r'stable/',
-  r'releng/',
-  r'release/',
+  ( r'svnadmin/', False ),
+  ( r'head/', True ),
+  ( r'stable/', True ),
+  ( r'releng/', True ),
+  ( r'release/', True ),
 ]
 
 # How much of path to strip off to get canonical pathname
@@ -87,9 +86,12 @@ kw_exclude = []
 
 def kw_checks_exempt(path):
   # Check to see if we're in a directory that has keyword checking enabled
-  for prefix in kw_dirs:
+  for prefix, stdlayout in kw_dirs:
     if path.startswith(prefix):
-      break
+      if stdlayout:
+        break
+      else:
+        return False
   else:
     return True
   # First, strip off stable/7/, releng/7.0/ etc to get canonical paths
@@ -194,11 +196,6 @@ class ChangeReceiver(delta.Editor):
     # POLICY: if svn:keywords is set, $ FreeBSD $ must be present and condensed.
     if keywords and not check_keywords(string, kw_exempt):
       self.do_fail('Path "%s" does not have a valid %s string (keywords not disabled here)\n' % (path, okkw))
-
-    # POLICY: If a file has text/*, then it must have eol-style
-    eolstyle = fs.node_prop(self.txn_root, path, core.SVN_PROP_EOL_STYLE)
-    if mimetype.startswith('text/') and not eolstyle:
-      self.do_fail('Path "%s" is text but is missing svn:eol-style property\n' % path)
 
     # Whew!
     core.svn_pool_destroy(subpool)
