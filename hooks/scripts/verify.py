@@ -72,6 +72,7 @@ kw_dirs = [
   ( r'stable/', True ),
   ( r'releng/', True ),
   ( r'release/', True ),
+  ( r'user/peter/', True ),
 ]
 
 # How much of path to strip off to get canonical pathname
@@ -80,6 +81,7 @@ kw_prefixes = [
   r'releng/[^/]+/',
   r'release/[^/]+/',
   r'stable/[^/]+/',
+  r'user/[^/]+/[^/]+/',
 ]
 
 kw_exclude = []
