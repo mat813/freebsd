@@ -6,6 +6,7 @@
 import string
 import sys
 import re
+import os.path
 from svn import core, fs, delta, repos
 
 # POLICY: if cvs2svn:cvs-rev must not be set.
@@ -18,16 +19,10 @@ from svn import core, fs, delta, repos
 # POLICY: If a file has text/*, then it must have eol-style
 
 
-# Pretend we have true booleans on older python versions
-try:
-  True
-except:
-  True = 1
-  False = 0
-
 text_characters = "".join(map(chr, range(32, 127)) + list("\n\r\t\b"))
 _null_trans = string.maketrans("", "")
 okkw = '$' + 'FreeBSD' + '$'
+badkw = '\$' + 'FreeBSD' + ':.*\$'
 
 def is_binary(s):
     if not s:      # Empty files are considered text
@@ -60,10 +55,53 @@ def mime_ok(mime):
     return True
   return False
 
-def check_keywords(path, s):
+def check_keywords(s, exempt):
   "Check if the keyword is ok"
+  r = re.compile(badkw)
+  if r.search(s):
+    return False
+  if exempt:
+    return True
   if s.find(okkw) != -1:
     return True
+  return False
+
+# List of directories that we do keyword checking in
+kw_dirs = [
+  r'svnadmin/',
+  r'head/',
+  r'stable/',
+  r'releng/',
+  r'release/',
+]
+
+# How much of path to strip off to get canonical pathname
+kw_prefixes = [
+  r'head/',
+  r'releng/[^/]+/',
+  r'release/[^/]+/',
+  r'stable/[^/]+/',
+]
+
+kw_exclude = []
+
+def kw_checks_exempt(path):
+  # Check to see if we're in a directory that has keyword checking enabled
+  for prefix in kw_dirs:
+    if path.startswith(prefix):
+      break
+  else:
+    return True
+  # First, strip off stable/7/, releng/7.0/ etc to get canonical paths
+  for prefix in kw_prefixes:
+    r = re.compile(prefix)
+    if r.match(path):
+      path = r.sub('', path, 1)
+  # Now, with a canonical path, check for exclusions.
+  for prefix in kw_exclude:
+    r = re.compile(prefix)
+    if r.match(path):
+      return True
   return False
 
 class ChangeReceiver(delta.Editor):
@@ -104,17 +142,6 @@ class ChangeReceiver(delta.Editor):
     if cvsrev:
       self.do_fail('Path "%s" needs to have "cvs2svn:cvs-rev" removed with "svn propdel".\n' % path)
 
-    # exempt vendor imports from any checking for now
-    if path.startswith('vendor'):
-      return
-    # exempt contrib areas too.
-    if path.startswith('head/contrib'):
-      return
-    # and in stable/*/contrib
-    r1 = re.compile(r'stable/\d+/contrib')
-    if r1.match(path):
-      return
-
     # POLICY: mime-type must be unset, text/*, application/* or image/*
     mimetype = fs.node_prop(self.txn_root, path, core.SVN_PROP_MIME_TYPE)
     if not mimetype:
@@ -130,15 +157,16 @@ class ChangeReceiver(delta.Editor):
 
     subpool = core.svn_pool_create(self.pool)
     stream = core.Stream(fs.file_contents(self.txn_root, path, subpool))
-    string = ""
+    str_list = []
     while 1:
       data = stream.read(core.SVN_STREAM_CHUNK_SIZE)
-      # I feel dirty, but I don't want to fail a commit because the keyword spanned a chunk.
-      string += data
+      str_list.append(data)
       if len(data) < core.SVN_STREAM_CHUNK_SIZE:
 	break
+    string = ''.join(str_list)
 
-    # POLICY: if a file has binary chars and no fbsd:notbinary, then pretend its not binary
+    # XXX: check for charset in mime type; bypass binary test if charset is present.
+    # POLICY: if a file has binary chars and fbsd:notbinary, then pretend its not binary
     binary = is_binary(string)
     fbsd_notbinary = fs.node_prop(self.txn_root, path, 'fbsd:notbinary')
     if binary and fbsd_notbinary:
@@ -150,10 +178,13 @@ class ChangeReceiver(delta.Editor):
 	self.do_fail('Path "%s" contains binary but has svn:mime-type "%s"\n' % (path, mimetype))
 	sys.stderr.write('Try application/* (application/octet-stream) or image/* instead.\n')
 
-    # POLICY: if a file does not have fbsd:nokeywords, or is binary then svn:keywords must be set
+    # See which paths don't require the svn:keywords property, or don't need the $ FreeBSD $ string.
+    kw_exempt = kw_checks_exempt(path)
+
+    # POLICY: if a file does not have fbsd:nokeywords, and is not binary then svn:keywords must be set
     if binary:
       fbsd_nokeywords = True
-    if not fbsd_nokeywords:
+    if not fbsd_nokeywords and not kw_exempt:
       kw = r'FreeBSD=%H'
       if not keywords:
 	self.do_fail('Path "%s" is missing the svn:keywords property (or an fbsd:nokeywords override)\n' % path)
@@ -161,7 +192,7 @@ class ChangeReceiver(delta.Editor):
 	self.do_fail('Path "%s" should have svn:keywords set to %s\n' % (path, kw))
 
     # POLICY: if svn:keywords is set, $ FreeBSD $ must be present and condensed.
-    if keywords and not check_keywords(path, string):
+    if keywords and not check_keywords(string, kw_exempt):
       self.do_fail('Path "%s" does not have a valid %s string (keywords not disabled here)\n' % (path, okkw))
 
     # POLICY: If a file has text/*, then it must have eol-style
@@ -173,22 +204,37 @@ class ChangeReceiver(delta.Editor):
     core.svn_pool_destroy(subpool)
 
 
-def verify(pool, repos_path, txn):
+def verify(pool, repos_path, mode, rev_or_txn):
   def authz_cb(root, path, pool):
     return True
 
+  for line in open(os.path.join(repos_path, 'conf', 'exclude')):
+    ln = line.strip()
+    if not ln.startswith('#') and ln != '':
+      kw_exclude.append(ln)
   fs_ptr = repos.fs(repos.open(repos_path, pool))
-  txn_ptr = fs.open_txn(fs_ptr, txn, pool)
-  txn_root = fs.txn_root(txn_ptr, pool)
-  base_root = fs.revision_root(fs_ptr, fs.txn_base_revision(txn_ptr), pool)
+  if mode == '-r':
+    rev = int(rev_or_txn)
+    txn_root = fs.revision_root(fs_ptr, rev)
+    txn_base = rev - 1
+  elif mode == '-t':
+    txn_ptr = fs.open_txn(fs_ptr, rev_or_txn, pool)
+    txn_root = fs.txn_root(txn_ptr, pool)
+    txn_base = fs.txn_base_revision(txn_ptr)
+  else:
+    sys.exit("arg 2 must be -r or -t")
+  base_root = fs.revision_root(fs_ptr, txn_base, pool)
   editor = ChangeReceiver(txn_root, base_root, pool)
   e_ptr, e_baton = delta.make_editor(editor, pool)
   repos.dir_delta(base_root, '', '', txn_root, '', e_ptr, e_baton, authz_cb, 0, 1, 0, 0, pool)
   fails = editor.did_fail()
   if fails > 0:
-    sys.stderr.write('== Pre-commit problem count: %d\n' % fails)
+    if mode == '-r':
+      sys.stderr.write('== Rev %d problem count: %d\n' % (rev, fails))
+    else:
+      sys.stderr.write('== Pre-commit problem count: %d\n' % fails)
     sys.exit(1)
 
 if __name__ == '__main__':
-  assert len(sys.argv) == 3
-  core.run_app(verify, sys.argv[1], sys.argv[2])
+  assert len(sys.argv) == 4
+  core.run_app(verify, sys.argv[1], sys.argv[2], sys.argv[3])

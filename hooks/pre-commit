@@ -82,7 +82,7 @@ sizelimit.py "$REPO" "$TXN" 1024000 || exit 1
 # POLICY: if a file does not have fbsd:nokeywords, or is binary then svn:keywords must be set
 # POLICY: if svn:keywords is set, $ FreeBSD $ must be present and condensed.
 # POLICY: If a file has text/*, then it must have eol-style
-verify.py "$REPO" "$TXN" || exit 1
+verify.py "$REPO" -t "$TXN" || exit 1
 
 # check for merge debris
 detect-merge-conflicts.sh "$REPO" "$TXN" || exit 1
