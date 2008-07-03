@@ -109,11 +109,19 @@ def kw_checks_exempt(path):
   return False
 
 class ChangeReceiver(delta.Editor):
-  def __init__(self, txn_root, base_root, pool):
+  def __init__(self, fs_ptr, txn_root, pool):
+    self.fs_ptr = fs_ptr
     self.txn_root = txn_root
-    self.base_root = base_root
     self.pool = pool
     self.failed = 0
+    if fs.is_revision_root(self.txn_root):
+      rev = fs.revision_root_revision(self.txn_root)
+      base_rev = rev - 1
+    else:
+      txn_name = fs.txn_root_name(self.txn_root)
+      txn_ptr = fs.open_txn(self.fs_ptr, txn_name)
+      base_rev = fs.txn_base_revision(txn_ptr)
+    self.base_root = fs.revision_root(fs_ptr, base_rev, pool)
 
   def do_fail(self, msg):
     if self.failed == 1:
@@ -215,17 +223,14 @@ def verify(pool, repos_path, mode, rev_or_txn):
   if mode == '-r':
     rev = int(rev_or_txn)
     txn_root = fs.revision_root(fs_ptr, rev)
-    txn_base = rev - 1
   elif mode == '-t':
     txn_ptr = fs.open_txn(fs_ptr, rev_or_txn, pool)
     txn_root = fs.txn_root(txn_ptr, pool)
-    txn_base = fs.txn_base_revision(txn_ptr)
   else:
     sys.exit("arg 2 must be -r or -t")
-  base_root = fs.revision_root(fs_ptr, txn_base, pool)
-  editor = ChangeReceiver(txn_root, base_root, pool)
+  editor = ChangeReceiver(fs_ptr, txn_root, pool)
   e_ptr, e_baton = delta.make_editor(editor, pool)
-  repos.dir_delta(base_root, '', '', txn_root, '', e_ptr, e_baton, authz_cb, 0, 1, 0, 0, pool)
+  repos.svn_repos_replay(txn_root, e_ptr, e_baton, pool)
   fails = editor.did_fail()
   if fails > 0:
     if mode == '-r':
