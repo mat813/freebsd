@@ -10,10 +10,11 @@
 # Sort by mentee login name.
 
 # Mentee	Mentor		Optional comment
-peter		albert
+ed		philip
 eri		mlaier		Co-mentor: thompsa
 lulf		pjd		Co-mentor: kib
 nwhitehorn	marcel		Co-mentor: grehan
+peter		albert
 rdivacky	kib
 remko		imp
 sson		jb
