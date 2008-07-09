@@ -211,6 +211,18 @@ def map2cvs(svnpath):
       return 'src/' + svnpath[plen:], branch
   return None, None
 
+# List of special remap cases.
+roottable = [
+  ( 'svnadmin/conf/access',  'CVSROOT/access',  'CVSROOT' ),
+  ( 'svnadmin/conf/mentors', 'CVSROOT/mentors', 'CVSROOT' ),
+]
+
+def maproot(p):
+  for svnpath, path, dir in roottable:
+    if p == svnpath:
+      return path, dir
+  return None, None
+
 # Add intermediate directories to the cvs checkout area as needed.
 # XXX should use 'cvs update -d -l' if the dir exists in cvsroot
 def makedirs(cvspath, path):
@@ -279,11 +291,11 @@ def exportrev(pool, fs_ptr, rev, cvspath):
   for k, p in editor.changes:
     #print 'Path ', p
     # Hack, hack
-    if p == 'svnadmin/conf/access':
-      path = 'CVSROOT/access'
+    (path, dir) = maproot(p)
+    if path:
       workpath = cvspath
       dump_file(fs_ptr, fs_root, rev, p, path, author, date, subpool, workpath)
-      pc[workpath] = 'CVSROOT'
+      pc[workpath] = dir
       continue
     (path, tag) = map2cvs(p)
     if not path:
