@@ -225,13 +225,13 @@ def maproot(p):
 
 # Add intermediate directories to the cvs checkout area as needed.
 # XXX should use 'cvs update -d -l' if the dir exists in cvsroot
-def makedirs(cvspath, path):
+def makedirs(cvspath, path, base):
   #print 'Makedirs:', cvspath, path
-  if not path.startswith('src'):
+  if not path.startswith(base):
     sys.exit('Illegal path %s' % path)
-  if path == 'src':
+  if path == base:
     return
-  makedirs(cvspath, _dirname(path))
+  makedirs(cvspath, _dirname(path), base)
   fullpath = os.path.join(cvspath, path)
   if os.path.isfile(fullpath):
      sys.exit('Dest dir is a file' % path)
@@ -314,7 +314,7 @@ def exportrev(pool, fs_ptr, rev, cvspath):
       assert not failed
     # at this point, the top directory and /src should exist
     #print p, path, k
-    makedirs(workpath, _dirname(path))
+    makedirs(workpath, _dirname(path), 'src')
     # Now the directory for the files must exist, and branch tag will be sticky
     assert os.path.isdir(os.path.join(workpath, _dirname(path)))
     assert k == 'A' or k == 'U' or k == 'D'
