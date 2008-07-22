@@ -47,3 +47,4 @@
 ^user/peter
 ^vendor/cpio
 ^vendor/bind9
+^vendor-crypto/openssh
