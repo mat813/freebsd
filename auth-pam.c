@@ -29,7 +29,7 @@
  * SUCH DAMAGE.
  */
 
-/* Based on $FreeBSD$ */
+/* Based on $FreeBSD: vendor-crypto/openssh/3.8.1p1/auth-pam.c 180714 2008-07-22 17:13:05Z des $ */
 #include "includes.h"
 RCSID("$Id: auth-pam.c,v 1.100 2004/04/18 01:00:26 dtucker Exp $");
 
