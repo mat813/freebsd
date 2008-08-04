@@ -48,3 +48,4 @@
 ^vendor/cpio
 ^vendor/bind9
 ^vendor-crypto/openssh
+^vendor-sys/pf
