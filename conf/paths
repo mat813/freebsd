@@ -47,5 +47,6 @@
 ^user/peter
 ^vendor/cpio
 ^vendor/bind9
+^vendor/tzdata
 ^vendor-crypto/openssh
 ^vendor-sys/pf
