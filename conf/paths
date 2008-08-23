@@ -50,4 +50,5 @@
 ^vendor/ntp
 ^vendor/tzdata
 ^vendor-crypto/openssh
+^vendor-crypto/openssl
 ^vendor-sys/pf
