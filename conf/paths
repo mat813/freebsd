@@ -48,6 +48,7 @@
 ^vendor/cpio
 ^vendor/bind9
 ^vendor/ntp
+^vendor/sendmail
 ^vendor/tzdata
 ^vendor-crypto/openssh
 ^vendor-crypto/openssl
