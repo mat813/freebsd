@@ -52,5 +52,4 @@
 ^vendor/tzdata
 ^vendor-crypto/openssh
 ^vendor-crypto/openssl
-^vendor-sys/ath
 ^vendor-sys/pf
