@@ -363,6 +363,7 @@ def export(pool, repos_path, cvspath):
 
 
 if __name__ == '__main__':
+  print "Version: $FreeBSD$"
   os.environ['CVSROOT'] = '/r/ncvs'
   core.run_app(export, '/r/svnmirror/base', '/r/svn2cvs/cvs')
   # test rig
