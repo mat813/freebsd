@@ -4,8 +4,8 @@
 # http://svn.collab.net/repos/svn/trunk/contrib/hook-scripts/detect-merge-conflicts.sh
 
 # A pre-commit hook to detect changes that look like forgotten
-# conflict markers. If any additions starting with '>>>>>>>',
-# '=======' or '<<<<<<<' are found, the commit is aborted with a nice
+# conflict markers. If any additions starting with '>>>>>>>'
+# or '<<<<<<<' are found, the commit is aborted with a nice
 # error message.
 #
 
@@ -22,7 +22,7 @@ fi
 
 # We scan through the transaction diff, looking for things that look
 # like conflict markers.  If we find one, we abort the commit.
-SUSPICIOUS=$($SVNLOOK diff -t "$TXN" "$REPO" | grep -E '^\+(<{7} \.|={7}$|>{7} \.)' | wc -l)
+SUSPICIOUS=$($SVNLOOK diff -t "$TXN" "$REPO" | grep -E '^\+(<{7} \.|>{7} \.)' | wc -l)
 
 if [ $SUSPICIOUS -ne 0 ]; then
   echo "Some parts of your commit look suspiciously like merge" >&2
