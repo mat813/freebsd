@@ -54,3 +54,4 @@
 ^vendor-crypto/openssh
 ^vendor-crypto/openssl
 ^vendor-sys/pf
+^vendor-sys/ath
