@@ -51,6 +51,8 @@
 ^vendor/netcat
 ^vendor/ntp
 ^vendor/sendmail
+^vendor/top
+^vendor/tzcode
 ^vendor/tzdata
 ^vendor-crypto/openssh
 ^vendor-crypto/openssl
