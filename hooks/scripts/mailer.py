@@ -243,10 +243,11 @@ class MailedOutput(OutputBase):
 #    hdrs = 'From: %s\n'    \
 #    hdrs = 'To: %s\n'      \
     hdrs = 'Subject: %s\n' \
+           'X-SVN-Group: %s\n' \
            'MIME-Version: 1.0\n' \
            'Content-Type: text/plain; charset=UTF-8\n' \
            'Content-Transfer-Encoding: 8bit\n' \
-           % (subject)
+           % (subject, group or "defaults")
 #           % (self.from_addr, string.join(self.to_addrs, ', '), subject)
     if self.reply_to:
       hdrs = '%sReply-To: %s\n' % (hdrs, self.reply_to)
