@@ -17,15 +17,15 @@
 ^stable/7/
 
 # Feature branches.  Not open until we're certain we're not reverting to cvs.
-#^user/
-#^projects/
+^user/
+^projects/
 
 # Release engineering, errata and security branches.
 # Approval required via approvecheck.
 ^releng/
 
 # Release engineering static snapshot tags.  Magic is required here.
-#^release/
+^release/
 
 # Vendor import work area.  Not open until we're certain we're not reverting to cvs.
 #^vendor/
@@ -44,7 +44,6 @@
 # misc.
 ^ROADMAP.txt
 
-^user/peter
 ^vendor/cpio
 ^vendor/bind9
 ^vendor/gdtoa
