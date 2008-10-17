@@ -50,6 +50,7 @@
 ^vendor/netcat
 ^vendor/ntp
 ^vendor/sendmail
+^vendor/tcsh
 ^vendor/top
 ^vendor/tzcode
 ^vendor/tzdata
