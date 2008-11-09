@@ -47,6 +47,7 @@
 ^vendor/cpio
 ^vendor/bind9
 ^vendor/gdtoa
+^vendor/ncurses
 ^vendor/netcat
 ^vendor/ntp
 ^vendor/sendmail
