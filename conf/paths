@@ -50,6 +50,7 @@
 ^vendor/ncurses
 ^vendor/netcat
 ^vendor/ntp
+^vendor/openbsm
 ^vendor/sendmail
 ^vendor/tcsh
 ^vendor/top
