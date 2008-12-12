@@ -21,8 +21,7 @@
 #^stable/6/			re
 ^releng/7.1/			re
 ^releng/7.0/			(security-officer|so)
-^releng/6.4/			re
-^releng/6.[0-3]/		(security-officer|so)
+^releng/6.[0-4]/		(security-officer|so)
 ^releng/5.[0-5]/		(security-officer|so)
 ^releng/4.[3-9]/		(security-officer|so)
 ^releng/4.1[01]/		(security-officer|so)
