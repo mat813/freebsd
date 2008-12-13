@@ -31,18 +31,59 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * $FreeBSD$
+ * $FreeBSD: vendor/openpam/CALAMITE/contrib/openpam/modules/pam_deny/pam_deny.c 91094 2002-02-23 01:22:51Z des $
  */
 
 #include <sys/param.h>
 
 #include <security/pam_modules.h>
 
-PAM_SM_DUMMY(authenticate);
-PAM_SM_DUMMY(setcred);
-PAM_SM_DUMMY(acct_mgmt);
-PAM_SM_DUMMY(open_session);
-PAM_SM_DUMMY(close_session);
-PAM_SM_DUMMY(chauthtok);
+PAM_EXTERN int
+pam_sm_authenticate(pam_handle_t *pamh, int flags,
+	int argc, const char *argv[])
+{
+
+	return (PAM_AUTH_ERR);
+}
+
+PAM_EXTERN int
+pam_sm_setcred(pam_handle_t *pamh, int flags,
+	int argc, const char *argv[])
+{
+
+	return (PAM_PERM_DENIED);
+}
+
+PAM_EXTERN int
+pam_sm_acct_mgmt(pam_handle_t *pamh, int flags,
+	int argc, const char *argv[])
+{
+
+	return (PAM_AUTH_ERR);
+}
+
+PAM_EXTERN int
+pam_sm_open_session(pam_handle_t *pamh, int flags,
+	int argc, const char *argv[])
+{
+
+	return (PAM_SESSION_ERR);
+}
+
+PAM_EXTERN int
+pam_sm_close_session(pam_handle_t *pamh, int flags,
+	int argc, const char *argv[])
+{
+
+	return (PAM_SESSION_ERR);
+}
+
+PAM_EXTERN int
+pam_sm_chauthtok(pam_handle_t *pamh, int flags,
+	int argc, const char *argv[])
+{
+
+	return (PAM_PERM_DENIED);
+}
 
 PAM_MODULE_ENTRY("pam_deny");
