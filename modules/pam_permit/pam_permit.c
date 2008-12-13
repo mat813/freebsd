@@ -31,7 +31,7 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * $FreeBSD$
+ * $FreeBSD: vendor/openpam/CALIOPSIS/contrib/openpam/modules/pam_permit/pam_permit.c 91094 2002-02-23 01:22:51Z des $
  */
 
 #include <sys/param.h>
