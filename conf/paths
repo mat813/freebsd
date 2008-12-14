@@ -53,6 +53,7 @@
 ^vendor/openbsm
 ^vendor/openpam
 ^vendor/pf
+^vendor/resolver
 ^vendor/sendmail
 ^vendor/tcsh
 ^vendor/top
