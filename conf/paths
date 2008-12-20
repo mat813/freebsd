@@ -46,6 +46,7 @@
 
 ^vendor/cpio
 ^vendor/bind9
+^vendor/bsnmp
 ^vendor/gdtoa
 ^vendor/ncurses
 ^vendor/netcat
