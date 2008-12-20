@@ -48,6 +48,7 @@
 ^vendor/bind9
 ^vendor/bsnmp
 ^vendor/gdtoa
+^vendor/libbegemot
 ^vendor/ncurses
 ^vendor/netcat
 ^vendor/ntp
