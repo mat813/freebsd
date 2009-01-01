@@ -1,5 +1,5 @@
 # ex:ts=8
-$FreeBSD$
+$FreeBSD: vendor/file/4.17a/contrib/file/FREEBSD-upgrade 159827 2006-06-21 09:28:01Z cvs2svn $
 
 Christos Zoulas `file'
 	originals can be found at: ftp://ftp.astron.com/pub/file/
