@@ -47,6 +47,7 @@
 ^vendor/cpio
 ^vendor/bind9
 ^vendor/bsnmp
+^vendor/file
 ^vendor/gdtoa
 ^vendor/libbegemot
 ^vendor/ncurses
