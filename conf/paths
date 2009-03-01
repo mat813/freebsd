@@ -64,7 +64,7 @@
 ^vendor/top
 ^vendor/tzcode
 ^vendor/tzdata
-^vendor/wpa_supplicant
+^vendor/wpa
 ^vendor-crypto/openssh
 ^vendor-crypto/openssl
 ^vendor-sys/pf
