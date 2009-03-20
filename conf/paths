@@ -69,3 +69,4 @@
 ^vendor-crypto/openssl
 ^vendor-sys/pf
 ^vendor-sys/ath
+^vendor/tcpdump
