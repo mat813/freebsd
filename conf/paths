@@ -70,3 +70,4 @@
 ^vendor-sys/pf
 ^vendor-sys/ath
 ^vendor/tcpdump
+^vendor/libpcap
