@@ -44,14 +44,22 @@
 # misc.
 ^ROADMAP.txt
 
-^vendor/cpio
+^vendor-crypto/openssh
+^vendor-crypto/openssl
+
+^vendor-sys/ath
+^vendor-sys/pf
+
 ^vendor/bind9
-^vendor/bsnmp
 ^vendor/binutils
+^vendor/bsnmp
+^vendor/cpio
 ^vendor/file
 ^vendor/gdb
 ^vendor/gdtoa
+^vendor/less
 ^vendor/libbegemot
+^vendor/libpcap
 ^vendor/ncurses
 ^vendor/netcat
 ^vendor/ntp
@@ -60,14 +68,10 @@
 ^vendor/pf
 ^vendor/resolver
 ^vendor/sendmail
+^vendor/tcpdump
 ^vendor/tcsh
 ^vendor/top
 ^vendor/tzcode
 ^vendor/tzdata
 ^vendor/wpa
-^vendor-crypto/openssh
-^vendor-crypto/openssl
-^vendor-sys/pf
-^vendor-sys/ath
-^vendor/tcpdump
-^vendor/libpcap
+
