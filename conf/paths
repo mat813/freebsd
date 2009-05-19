@@ -47,6 +47,7 @@
 ^vendor-crypto/openssh
 ^vendor-crypto/openssl
 
+^vendor-sys/acpica
 ^vendor-sys/ath
 ^vendor-sys/pf
 
