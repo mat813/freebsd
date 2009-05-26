@@ -55,6 +55,7 @@
 ^vendor/binutils
 ^vendor/bsnmp
 ^vendor/cpio
+^vendor/ee
 ^vendor/file
 ^vendor/gdb
 ^vendor/gdtoa
