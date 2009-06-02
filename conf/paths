@@ -54,6 +54,7 @@
 ^vendor/bind9
 ^vendor/binutils
 ^vendor/bsnmp
+^vendor/clang
 ^vendor/cpio
 ^vendor/ee
 ^vendor/file
@@ -62,6 +63,7 @@
 ^vendor/less
 ^vendor/libbegemot
 ^vendor/libpcap
+^vendor/llvm
 ^vendor/ncurses
 ^vendor/netcat
 ^vendor/ntp
