@@ -49,6 +49,7 @@
 
 ^vendor-sys/acpica
 ^vendor-sys/ath
+^vendor-sys/opensolaris
 ^vendor-sys/pf
 
 ^vendor/bind9
@@ -69,6 +70,7 @@
 ^vendor/ntp
 ^vendor/openbsm
 ^vendor/openpam
+^vendor/opensolaris
 ^vendor/pf
 ^vendor/resolver
 ^vendor/sendmail
