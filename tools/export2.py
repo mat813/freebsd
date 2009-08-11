@@ -174,6 +174,7 @@ maptable = [
   ( 'stable/5/',     'RELENG_5' ),
   ( 'stable/6/',     'RELENG_6' ),
   ( 'stable/7/',     'RELENG_7' ),
+  ( 'stable/8/',     'RELENG_8' ),
   # errata / security / releng branches
   ( 'releng/ALPHA_2_0/','ALPHA_2_0' ),
   ( 'releng/BETA_2_0/', 'BETA_2_0' ),
@@ -202,6 +203,8 @@ maptable = [
   ( 'releng/7.0/',   'RELENG_7_0' ),
   ( 'releng/7.1/',   'RELENG_7_1' ),
   ( 'releng/7.2/',   'RELENG_7_2' ),
+  ( 'releng/8.0/',   'RELENG_8_0' ),
+  ( 'releng/8.1/',   'RELENG_8_1' ),
 ]
 
 def map2cvs(svnpath):
