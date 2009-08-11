@@ -313,7 +313,16 @@ def exportrev(pool, fs_ptr, rev, cvspath):
       failed = do_cvs(workpath, '', "cvs -Rq co %s src" % uptag)
       assert not failed
     # at this point, the top directory and /src should exist
-    #print p, path, k
+    print p, path, k
+    # hacks
+    #if p == 'head/contrib/file/FREEBSD-upgrade' and k == 'A':
+    #  continue
+    #if p == 'head/contrib/file/magic2mime' and k == 'A':
+    #  continue
+    #if p == 'head/lib/libc/stdio/asprintf.c' and k == 'D':
+    #  continue
+    if p == 'head/tools/build/options/WITH_BIND_LIBS' and k == 'A' and rev == 193280:
+      continue
     makedirs(workpath, _dirname(path), 'src')
     # Now the directory for the files must exist, and branch tag will be sticky
     assert os.path.isdir(os.path.join(workpath, _dirname(path)))
@@ -352,6 +361,7 @@ def export(pool, repos_path, cvspath):
     curr_rev = fs.youngest_rev(fs_ptr)
     last_rev = int(fs.revision_prop(fs_ptr, 0, 'fbsd:lastexp'))
     if last_rev < curr_rev:
+      time.sleep(5)
       print '%d %s' % (last_rev, curr_rev)
       rev = '%d' % (last_rev + 1)
       print '==========> export rev ' + rev
