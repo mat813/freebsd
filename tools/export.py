@@ -203,6 +203,7 @@ maptable = [
   ( 'releng/7.0/',   'RELENG_7_0' ),
   ( 'releng/7.1/',   'RELENG_7_1' ),
   ( 'releng/7.2/',   'RELENG_7_2' ),
+  ( 'releng/7.3/',   'RELENG_7_3' ),
   ( 'releng/8.0/',   'RELENG_8_0' ),
   ( 'releng/8.1/',   'RELENG_8_1' ),
 ]
