@@ -360,7 +360,6 @@ def exportrev(pool, fs_ptr, rev, cvspath):
 def export(pool, repos_path, cvspath, rev):
   repos_path = core.svn_path_canonicalize(repos_path)
   fs_ptr = repos.fs(repos.open(repos_path, pool))
-  print '==========> export rev ' + rev
   exportrev(pool, fs_ptr, rev, cvspath)
 
 #
