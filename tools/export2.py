@@ -354,28 +354,14 @@ def exportrev(pool, fs_ptr, rev, cvspath):
   core.svn_pool_destroy(subpool)
 
 # Loop for the export range
-def export(pool, repos_path, cvspath):
+def export(pool, repos_path, cvspath, rev):
   repos_path = core.svn_path_canonicalize(repos_path)
   fs_ptr = repos.fs(repos.open(repos_path, pool))
-  while True:
-    curr_rev = fs.youngest_rev(fs_ptr)
-    last_rev = int(fs.revision_prop(fs_ptr, 0, 'fbsd:lastexp'))
-    if last_rev < curr_rev:
-      time.sleep(5)
-      print '%d %s' % (last_rev, curr_rev)
-      rev = '%d' % (last_rev + 1)
-      print '==========> export rev ' + rev
-      exportrev(pool, fs_ptr, last_rev + 1, cvspath)
-      fs.change_rev_prop(fs_ptr, 0, 'fbsd:lastexp', rev)
-      continue
-    print "."
-    time.sleep(15)
-
+  print '==========> export rev ' + rev
+  exportrev(pool, fs_ptr, rev, cvspath)
 
 if __name__ == '__main__':
   print "Version: $FreeBSD$"
-  os.environ['CVSROOT'] = '/r/ncvs'
-  core.run_app(export, '/r/svnmirror/base', '/r/svn2cvs/cvs')
-  # test rig
-  #os.environ['CVSROOT'] = '/home/peter/exp/cvs'
-  #core.run_app(export, '/home/peter/exp/svn', '/home/peter/exp/co')
+  assert len(sys.argv) == 5
+  os.environ['CVSROOT'] = sys.argv[4]
+  core.run_app(export, sys.argv[1], sys.argv[2], int(sys.argv[3]))
