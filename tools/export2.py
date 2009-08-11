@@ -360,6 +360,10 @@ def export(pool, repos_path, cvspath, rev):
   print '==========> export rev ' + rev
   exportrev(pool, fs_ptr, rev, cvspath)
 
+#
+# Invoke: export2.py /r/svnmirror/base /r/svn2cvs/cvs 12345 /r/ncvs
+#                    svn repo          cvs checkout   rev   cvsroot
+#
 if __name__ == '__main__':
   print "Version: $FreeBSD$"
   assert len(sys.argv) == 5
