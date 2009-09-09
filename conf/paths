@@ -52,6 +52,7 @@
 ^vendor-sys/ath
 ^vendor-sys/opensolaris
 ^vendor-sys/pf
+^vendor-sys/x86emu
 
 ^vendor/bind9
 ^vendor/binutils
