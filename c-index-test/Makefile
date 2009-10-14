@@ -8,7 +8,7 @@
 ##===----------------------------------------------------------------------===##
 LEVEL = ../../../..
 
-TOOLNAME = index-test
+TOOLNAME = c-index-test
 CPPFLAGS += -I$(PROJ_SRC_DIR)/../../include -I$(PROJ_OBJ_DIR)/../../include
 CXXFLAGS = -fno-rtti
 NO_INSTALL = 1
@@ -19,6 +19,6 @@ TOOL_NO_EXPORTS = 1
 include $(LEVEL)/Makefile.config
 
 LINK_COMPONENTS := bitreader mc
-USEDLIBS = clangIndex.a clangFrontend.a clangSema.a clangAST.a clangLex.a clangBasic.a 
+USEDLIBS = CIndex.a clangIndex.a clangFrontend.a clangSema.a clangAST.a clangLex.a clangBasic.a 
 
 include $(LLVM_SRC_ROOT)/Makefile.rules
