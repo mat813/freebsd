@@ -1,4 +1,4 @@
-##===- examples/Kaleidoscope/Makefile ----------------------*- Makefile -*-===##
+##===- examples/Kaleidoscope/Chapter4/Makefile -------------*- Makefile -*-===##
 # 
 #                     The LLVM Compiler Infrastructure
 #
@@ -6,10 +6,10 @@
 # License. See LICENSE.TXT for details.
 # 
 ##===----------------------------------------------------------------------===##
-LEVEL=../..
+LEVEL = ../../..
+TOOLNAME = Kaleidoscope-Ch4
+EXAMPLE_TOOL = 1
 
-include $(LEVEL)/Makefile.config
-
-PARALLEL_DIRS:= Chapter2 Chapter3 Chapter4 Chapter5 Chapter6 Chapter7
+LINK_COMPONENTS := core jit interpreter native
 
 include $(LEVEL)/Makefile.common

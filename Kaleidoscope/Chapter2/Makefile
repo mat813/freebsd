@@ -1,4 +1,4 @@
-##===- examples/Kaleidoscope/Makefile ----------------------*- Makefile -*-===##
+##===- examples/Kaleidoscope/Chapter2/Makefile -------------*- Makefile -*-===##
 # 
 #                     The LLVM Compiler Infrastructure
 #
@@ -6,10 +6,8 @@
 # License. See LICENSE.TXT for details.
 # 
 ##===----------------------------------------------------------------------===##
-LEVEL=../..
-
-include $(LEVEL)/Makefile.config
-
-PARALLEL_DIRS:= Chapter2 Chapter3 Chapter4 Chapter5 Chapter6 Chapter7
+LEVEL = ../../..
+TOOLNAME = Kaleidoscope-Ch2
+EXAMPLE_TOOL = 1
 
 include $(LEVEL)/Makefile.common
