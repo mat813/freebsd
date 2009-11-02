@@ -1062,7 +1062,8 @@ class TextCommitRenderer:
           text = ' unchanged'
         w('     - copied%s from r%d, %s%s\n'
           % (text, d.base_rev, d.base_path, is_dir))
-    w('Directory Properties:\n%s' % (ps))
+    if len(ps) > 0:
+      w('Directory Properties:\n%s' % (ps))
 
   def _render_diffs(self, diffs, section_header):
     """Render diffs. Write the SECTION_HEADER if there are actually
