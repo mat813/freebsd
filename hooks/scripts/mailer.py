@@ -370,9 +370,14 @@ class Commit(Messenger):
 
     # figure out the changed directories
     dirs = { }
+    pdirs = { }
     for path, change in self.changelist:
       if change.item_kind == svn.core.svn_node_dir:
-        dirs[path] = None
+        # do not include dirs that have only prop changes
+        if change.prop_changes:
+          pdirs[path] = None
+        else:
+          dirs[path] = None
       else:
         idx = string.rfind(path, '/')
         if idx == -1:
@@ -380,7 +385,10 @@ class Commit(Messenger):
         else:
           dirs[path[:idx]] = None
 
-    dirlist = dirs.keys()
+    if len(dirs) == 0:
+      dirlist = pdirs.keys()
+    else:
+      dirlist = dirs.keys()
 
     commondir, dirlist = get_commondir(dirlist)
 
@@ -1029,6 +1037,7 @@ class TextCommitRenderer:
 
     w = self.output.write
     w(header + ':\n')
+    ps = ''
     for d in data_list:
       if d.is_dir:
         is_dir = '/'
@@ -1037,11 +1046,13 @@ class TextCommitRenderer:
       if d.props_changed:
         if d.text_changed:
           props = '   (contents, props changed)'
+          w('  %s%s%s\n' % (d.path, is_dir, props))
         else:
           props = '   (props changed)'
+          ps = ('%s  %s%s%s\n' % (ps, d.path, is_dir, props))
       else:
         props = ''
-      w('  %s%s%s\n' % (d.path, is_dir, props))
+        w('  %s%s%s\n' % (d.path, is_dir, props))
       if d.copied:
         if is_dir:
           text = ''
@@ -1051,6 +1062,7 @@ class TextCommitRenderer:
           text = ' unchanged'
         w('     - copied%s from r%d, %s%s\n'
           % (text, d.base_rev, d.base_path, is_dir))
+    w('Directory Properties:\n%s' % (ps))
 
   def _render_diffs(self, diffs, section_header):
     """Render diffs. Write the SECTION_HEADER if there are actually
