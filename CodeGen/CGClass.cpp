@@ -1,4 +1,4 @@
-//===--- CGCXXClass.cpp - Emit LLVM Code for C++ classes ------------------===//
+//===--- CGClass.cpp - Emit LLVM Code for C++ classes ---------------------===//
 //
 //                     The LLVM Compiler Infrastructure
 //
@@ -31,9 +31,6 @@ ComputeNonVirtualBaseClassOffset(ASTContext &Context, CXXBasePaths &Paths,
     const ASTRecordLayout &Layout = Context.getASTRecordLayout(Element.Class);
     
     const CXXBaseSpecifier *BS = Element.Base;
-    // FIXME: enable test3 from virt.cc to not abort.
-    if (BS->isVirtual())
-      return 0;
     assert(!BS->isVirtual() && "Should not see virtual bases here!");
     
     const CXXRecordDecl *Base = 
@@ -75,7 +72,7 @@ static llvm::Value *GetCXXBaseClassOffset(CodeGenFunction &CGF,
                                           const CXXRecordDecl *ClassDecl,
                                           const CXXRecordDecl *BaseClassDecl) {
   CXXBasePaths Paths(/*FindAmbiguities=*/false,
-                     /*RecordPaths=*/true, /*DetectVirtual=*/true);
+                     /*RecordPaths=*/true, /*DetectVirtual=*/false);
   if (!const_cast<CXXRecordDecl *>(ClassDecl)->
         isDerivedFrom(const_cast<CXXRecordDecl *>(BaseClassDecl), Paths)) {
     assert(false && "Class must be derived from the passed in base class!");
@@ -84,21 +81,20 @@ static llvm::Value *GetCXXBaseClassOffset(CodeGenFunction &CGF,
 
   unsigned Start = 0;
   llvm::Value *VirtualOffset = 0;
-  if (const RecordType *RT = Paths.getDetectedVirtual()) {
-    const CXXRecordDecl *VBase = cast<CXXRecordDecl>(RT->getDecl());
-    
-    VirtualOffset = 
-      CGF.GetVirtualCXXBaseClassOffset(BaseValue, ClassDecl, VBase);
-    
-    const CXXBasePath &Path = Paths.front();
-    unsigned e = Path.size();
-    for (Start = 0; Start != e; ++Start) {
-      const CXXBasePathElement& Element = Path[Start];
-      
-      if (Element.Class == VBase)
-        break;
+
+  const CXXBasePath &Path = Paths.front();
+  const CXXRecordDecl *VBase = 0;
+  for (unsigned i = 0, e = Path.size(); i != e; ++i) {
+    const CXXBasePathElement& Element = Path[i];
+    if (Element.Base->isVirtual()) {
+      Start = i+1;
+      QualType VBaseType = Element.Base->getType();
+      VBase = cast<CXXRecordDecl>(VBaseType->getAs<RecordType>()->getDecl());
     }
   }
+  if (VBase)
+    VirtualOffset = 
+      CGF.GetVirtualCXXBaseClassOffset(BaseValue, ClassDecl, VBase);
   
   uint64_t Offset = 
     ComputeNonVirtualBaseClassOffset(CGF.getContext(), Paths, Start);
@@ -117,10 +113,10 @@ static llvm::Value *GetCXXBaseClassOffset(CodeGenFunction &CGF,
 }
 
 llvm::Value *
-CodeGenFunction::GetAddressCXXOfBaseClass(llvm::Value *BaseValue,
-                                          const CXXRecordDecl *ClassDecl,
-                                          const CXXRecordDecl *BaseClassDecl,
-                                          bool NullCheckValue) {
+CodeGenFunction::GetAddressOfBaseClass(llvm::Value *Value,
+                                       const CXXRecordDecl *ClassDecl,
+                                       const CXXRecordDecl *BaseClassDecl,
+                                       bool NullCheckValue) {
   QualType BTy =
     getContext().getCanonicalType(
       getContext().getTypeDeclType(const_cast<CXXRecordDecl*>(BaseClassDecl)));
@@ -128,7 +124,7 @@ CodeGenFunction::GetAddressCXXOfBaseClass(llvm::Value *BaseValue,
 
   if (ClassDecl == BaseClassDecl) {
     // Just cast back.
-    return Builder.CreateBitCast(BaseValue, BasePtrTy);
+    return Builder.CreateBitCast(Value, BasePtrTy);
   }
   
   llvm::BasicBlock *CastNull = 0;
@@ -141,8 +137,8 @@ CodeGenFunction::GetAddressCXXOfBaseClass(llvm::Value *BaseValue,
     CastEnd = createBasicBlock("cast.end");
     
     llvm::Value *IsNull = 
-      Builder.CreateICmpEQ(BaseValue,
-                           llvm::Constant::getNullValue(BaseValue->getType()));
+      Builder.CreateICmpEQ(Value,
+                           llvm::Constant::getNullValue(Value->getType()));
     Builder.CreateCondBr(IsNull, CastNull, CastNotNull);
     EmitBlock(CastNotNull);
   }
@@ -150,16 +146,16 @@ CodeGenFunction::GetAddressCXXOfBaseClass(llvm::Value *BaseValue,
   const llvm::Type *Int8PtrTy = llvm::Type::getInt8PtrTy(VMContext);
 
   llvm::Value *Offset = 
-    GetCXXBaseClassOffset(*this, BaseValue, ClassDecl, BaseClassDecl);
+    GetCXXBaseClassOffset(*this, Value, ClassDecl, BaseClassDecl);
   
   if (Offset) {
     // Apply the offset.
-    BaseValue = Builder.CreateBitCast(BaseValue, Int8PtrTy);
-    BaseValue = Builder.CreateGEP(BaseValue, Offset, "add.ptr");
+    Value = Builder.CreateBitCast(Value, Int8PtrTy);
+    Value = Builder.CreateGEP(Value, Offset, "add.ptr");
   }
   
   // Cast back.
-  BaseValue = Builder.CreateBitCast(BaseValue, BasePtrTy);
+  Value = Builder.CreateBitCast(Value, BasePtrTy);
  
   if (NullCheckValue) {
     Builder.CreateBr(CastEnd);
@@ -167,13 +163,73 @@ CodeGenFunction::GetAddressCXXOfBaseClass(llvm::Value *BaseValue,
     Builder.CreateBr(CastEnd);
     EmitBlock(CastEnd);
     
-    llvm::PHINode *PHI = Builder.CreatePHI(BaseValue->getType());
+    llvm::PHINode *PHI = Builder.CreatePHI(Value->getType());
     PHI->reserveOperandSpace(2);
-    PHI->addIncoming(BaseValue, CastNotNull);
-    PHI->addIncoming(llvm::Constant::getNullValue(BaseValue->getType()), 
+    PHI->addIncoming(Value, CastNotNull);
+    PHI->addIncoming(llvm::Constant::getNullValue(Value->getType()), 
                      CastNull);
-    BaseValue = PHI;
+    Value = PHI;
   }
   
-  return BaseValue;
+  return Value;
+}
+
+llvm::Value *
+CodeGenFunction::GetAddressOfDerivedClass(llvm::Value *Value,
+                                          const CXXRecordDecl *ClassDecl,
+                                          const CXXRecordDecl *DerivedClassDecl,
+                                          bool NullCheckValue) {
+  QualType DerivedTy =
+    getContext().getCanonicalType(
+    getContext().getTypeDeclType(const_cast<CXXRecordDecl*>(DerivedClassDecl)));
+  const llvm::Type *DerivedPtrTy = ConvertType(DerivedTy)->getPointerTo();
+  
+  if (ClassDecl == DerivedClassDecl) {
+    // Just cast back.
+    return Builder.CreateBitCast(Value, DerivedPtrTy);
+  }
+
+  llvm::BasicBlock *CastNull = 0;
+  llvm::BasicBlock *CastNotNull = 0;
+  llvm::BasicBlock *CastEnd = 0;
+  
+  if (NullCheckValue) {
+    CastNull = createBasicBlock("cast.null");
+    CastNotNull = createBasicBlock("cast.notnull");
+    CastEnd = createBasicBlock("cast.end");
+    
+    llvm::Value *IsNull = 
+    Builder.CreateICmpEQ(Value,
+                         llvm::Constant::getNullValue(Value->getType()));
+    Builder.CreateCondBr(IsNull, CastNull, CastNotNull);
+    EmitBlock(CastNotNull);
+  }
+  
+  llvm::Value *Offset = GetCXXBaseClassOffset(*this, Value, DerivedClassDecl,
+                                              ClassDecl);
+  if (Offset) {
+    // Apply the offset.
+    Value = Builder.CreatePtrToInt(Value, Offset->getType());
+    Value = Builder.CreateSub(Value, Offset);
+    Value = Builder.CreateIntToPtr(Value, DerivedPtrTy);
+  } else {
+    // Just cast.
+    Value = Builder.CreateBitCast(Value, DerivedPtrTy);
+  }
+
+  if (NullCheckValue) {
+    Builder.CreateBr(CastEnd);
+    EmitBlock(CastNull);
+    Builder.CreateBr(CastEnd);
+    EmitBlock(CastEnd);
+    
+    llvm::PHINode *PHI = Builder.CreatePHI(Value->getType());
+    PHI->reserveOperandSpace(2);
+    PHI->addIncoming(Value, CastNotNull);
+    PHI->addIncoming(llvm::Constant::getNullValue(Value->getType()), 
+                     CastNull);
+    Value = PHI;
+  }
+  
+  return Value;
 }

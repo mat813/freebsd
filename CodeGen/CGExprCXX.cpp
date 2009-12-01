@@ -1,4 +1,4 @@
-//===--- CGCXXExpr.cpp - Emit LLVM Code for C++ expressions ---------------===//
+//===--- CGExprCXX.cpp - Emit LLVM Code for C++ expressions ---------------===//
 //
 //                     The LLVM Compiler Infrastructure
 //
@@ -83,38 +83,41 @@ static llvm::Value *EmitCXXNewAllocSize(CodeGenFunction &CGF,
 static void EmitNewInitializer(CodeGenFunction &CGF, const CXXNewExpr *E,
                                llvm::Value *NewPtr,
                                llvm::Value *NumElements) {
-  QualType AllocType = E->getAllocatedType();
-
-  if (!E->isArray()) {
-    if (CXXConstructorDecl *Ctor = E->getConstructor()) {
-      CGF.EmitCXXConstructorCall(Ctor, Ctor_Complete, NewPtr,
-                                 E->constructor_arg_begin(),
-                                 E->constructor_arg_end());
-
-      return;
-    }
-    
-    // We have a POD type.
-    if (E->getNumConstructorArgs() == 0)
-      return;
-
-    assert(E->getNumConstructorArgs() == 1 &&
-           "Can only have one argument to initializer of POD type.");
-      
-    const Expr *Init = E->getConstructorArg(0);
-    
-    if (!CGF.hasAggregateLLVMType(AllocType))
-      CGF.Builder.CreateStore(CGF.EmitScalarExpr(Init), NewPtr);
-    else if (AllocType->isAnyComplexType())
-      CGF.EmitComplexExprIntoAddr(Init, NewPtr, 
-                                  AllocType.isVolatileQualified());
-    else
-      CGF.EmitAggExpr(Init, NewPtr, AllocType.isVolatileQualified());
+  if (E->isArray()) {
+    if (CXXConstructorDecl *Ctor = E->getConstructor())
+      CGF.EmitCXXAggrConstructorCall(Ctor, NumElements, NewPtr, 
+                                     E->constructor_arg_begin(), 
+                                     E->constructor_arg_end());
     return;
   }
   
-  if (CXXConstructorDecl *Ctor = E->getConstructor())
-    CGF.EmitCXXAggrConstructorCall(Ctor, NumElements, NewPtr);
+  QualType AllocType = E->getAllocatedType();
+
+  if (CXXConstructorDecl *Ctor = E->getConstructor()) {
+    CGF.EmitCXXConstructorCall(Ctor, Ctor_Complete, NewPtr,
+                               E->constructor_arg_begin(),
+                               E->constructor_arg_end());
+
+    return;
+  }
+    
+  // We have a POD type.
+  if (E->getNumConstructorArgs() == 0)
+    return;
+
+  assert(E->getNumConstructorArgs() == 1 &&
+         "Can only have one argument to initializer of POD type.");
+      
+  const Expr *Init = E->getConstructorArg(0);
+    
+  if (!CGF.hasAggregateLLVMType(AllocType)) 
+    CGF.EmitStoreOfScalar(CGF.EmitScalarExpr(Init), NewPtr,
+                          AllocType.isVolatileQualified(), AllocType);
+  else if (AllocType->isAnyComplexType())
+    CGF.EmitComplexExprIntoAddr(Init, NewPtr, 
+                                AllocType.isVolatileQualified());
+  else
+    CGF.EmitAggExpr(Init, NewPtr, AllocType.isVolatileQualified());
 }
 
 llvm::Value *CodeGenFunction::EmitCXXNewExpr(const CXXNewExpr *E) {
@@ -359,7 +362,7 @@ llvm::Value * CodeGenFunction::EmitCXXTypeidExpr(const CXXTypeidExpr *E) {
         return Builder.CreateBitCast(CGM.GenerateRttiRef(RD), LTy);
       return Builder.CreateBitCast(CGM.GenerateRtti(RD), LTy);
     }
-    return Builder.CreateBitCast(CGM.GenerateRttiNonClass(Ty), LTy);
+    return Builder.CreateBitCast(CGM.GenerateRtti(Ty), LTy);
   }
   Expr *subE = E->getExprOperand();
   Ty = subE->getType();
@@ -403,7 +406,7 @@ llvm::Value * CodeGenFunction::EmitCXXTypeidExpr(const CXXTypeidExpr *E) {
     }      
     return Builder.CreateBitCast(CGM.GenerateRtti(RD), LTy);
   }
-  return Builder.CreateBitCast(CGM.GenerateRttiNonClass(Ty), LTy);
+  return Builder.CreateBitCast(CGM.GenerateRtti(Ty), LTy);
 }
 
 llvm::Value *CodeGenFunction::EmitDynamicCast(llvm::Value *V,
