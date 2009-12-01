@@ -1,4 +1,4 @@
-//===-- SelectionDAGBuild.h - Selection-DAG building ----------------------===//
+//===-- SelectionDAGBuilder.h - Selection-DAG building --------------------===//
 //
 //                     The LLVM Compiler Infrastructure
 //
@@ -11,8 +11,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef SELECTIONDAGBUILD_H
-#define SELECTIONDAGBUILD_H
+#ifndef SELECTIONDAGBUILDER_H
+#define SELECTIONDAGBUILDER_H
 
 #include "llvm/Constants.h"
 #include "llvm/CodeGen/SelectionDAG.h"
@@ -25,7 +25,6 @@
 #include "llvm/CodeGen/ValueTypes.h"
 #include "llvm/Support/CallSite.h"
 #include "llvm/Support/ErrorHandling.h"
-#include "llvm/Target/TargetMachine.h"
 #include <vector>
 #include <set>
 
@@ -45,6 +44,7 @@ class FPToSIInst;
 class FPToUIInst;
 class FPTruncInst;
 class Function;
+class FunctionLoweringInfo;
 class GetElementPtrInst;
 class GCFunctionInfo;
 class ICmpInst;
@@ -58,7 +58,6 @@ class LoadInst;
 class MachineBasicBlock;
 class MachineFunction;
 class MachineInstr;
-class MachineModuleInfo;
 class MachineRegisterInfo;
 class PHINode;
 class PtrToIntInst;
@@ -79,98 +78,12 @@ class UnwindInst;
 class VAArgInst;
 class ZExtInst;
 
-//===--------------------------------------------------------------------===//
-/// FunctionLoweringInfo - This contains information that is global to a
-/// function that is used when lowering a region of the function.
-///
-class FunctionLoweringInfo {
-public:
-  TargetLowering &TLI;
-  Function *Fn;
-  MachineFunction *MF;
-  MachineRegisterInfo *RegInfo;
-
-  /// CanLowerReturn - true iff the function's return value can be lowered to
-  /// registers.
-  bool CanLowerReturn;
-
-  /// DemoteRegister - if CanLowerReturn is false, DemoteRegister is a vreg
-  /// allocated to hold a pointer to the hidden sret parameter.
-  unsigned DemoteRegister;
-
-  explicit FunctionLoweringInfo(TargetLowering &TLI);
-
-  /// set - Initialize this FunctionLoweringInfo with the given Function
-  /// and its associated MachineFunction.
-  ///
-  void set(Function &Fn, MachineFunction &MF, SelectionDAG &DAG,
-           bool EnableFastISel);
-
-  /// MBBMap - A mapping from LLVM basic blocks to their machine code entry.
-  DenseMap<const BasicBlock*, MachineBasicBlock *> MBBMap;
-
-  /// ValueMap - Since we emit code for the function a basic block at a time,
-  /// we must remember which virtual registers hold the values for
-  /// cross-basic-block values.
-  DenseMap<const Value*, unsigned> ValueMap;
-
-  /// StaticAllocaMap - Keep track of frame indices for fixed sized allocas in
-  /// the entry block.  This allows the allocas to be efficiently referenced
-  /// anywhere in the function.
-  DenseMap<const AllocaInst*, int> StaticAllocaMap;
-
-#ifndef NDEBUG
-  SmallSet<Instruction*, 8> CatchInfoLost;
-  SmallSet<Instruction*, 8> CatchInfoFound;
-#endif
-
-  unsigned MakeReg(EVT VT);
-  
-  /// isExportedInst - Return true if the specified value is an instruction
-  /// exported from its block.
-  bool isExportedInst(const Value *V) {
-    return ValueMap.count(V);
-  }
-
-  unsigned CreateRegForValue(const Value *V);
-  
-  unsigned InitializeRegForValue(const Value *V) {
-    unsigned &R = ValueMap[V];
-    assert(R == 0 && "Already initialized this value register!");
-    return R = CreateRegForValue(V);
-  }
-  
-  struct LiveOutInfo {
-    unsigned NumSignBits;
-    APInt KnownOne, KnownZero;
-    LiveOutInfo() : NumSignBits(0), KnownOne(1, 0), KnownZero(1, 0) {}
-  };
-  
-  /// LiveOutRegInfo - Information about live out vregs, indexed by their
-  /// register number offset by 'FirstVirtualRegister'.
-  std::vector<LiveOutInfo> LiveOutRegInfo;
-
-  /// clear - Clear out all the function-specific state. This returns this
-  /// FunctionLoweringInfo to an empty state, ready to be used for a
-  /// different function.
-  void clear() {
-    MBBMap.clear();
-    ValueMap.clear();
-    StaticAllocaMap.clear();
-#ifndef NDEBUG
-    CatchInfoLost.clear();
-    CatchInfoFound.clear();
-#endif
-    LiveOutRegInfo.clear();
-  }
-};
-
 //===----------------------------------------------------------------------===//
-/// SelectionDAGLowering - This is the common target-independent lowering
+/// SelectionDAGBuilder - This is the common target-independent lowering
 /// implementation that is parameterized by a TargetLowering object.
 /// Also, targets can overload any lowering method.
 ///
-class SelectionDAGLowering {
+class SelectionDAGBuilder {
   MachineBasicBlock *CurMBB;
 
   /// CurDebugLoc - current file + line number.  Changes as we build the DAG.
@@ -260,9 +173,9 @@ class SelectionDAGLowering {
 
   size_t Clusterify(CaseVector& Cases, const SwitchInst &SI);
 
-  /// CaseBlock - This structure is used to communicate between SDLowering and
-  /// SDISel for the code generation of additional basic blocks needed by multi-
-  /// case switch statements.
+  /// CaseBlock - This structure is used to communicate between
+  /// SelectionDAGBuilder and SDISel for the code generation of additional basic
+  /// blocks needed by multi-case switch statements.
   struct CaseBlock {
     CaseBlock(ISD::CondCode cc, Value *cmplhs, Value *cmprhs, Value *cmpmiddle,
               MachineBasicBlock *truebb, MachineBasicBlock *falsebb,
@@ -384,9 +297,9 @@ public:
 
   LLVMContext *Context;
 
-  SelectionDAGLowering(SelectionDAG &dag, TargetLowering &tli,
-                       FunctionLoweringInfo &funcinfo,
-                       CodeGenOpt::Level ol)
+  SelectionDAGBuilder(SelectionDAG &dag, TargetLowering &tli,
+                      FunctionLoweringInfo &funcinfo,
+                      CodeGenOpt::Level ol)
     : CurDebugLoc(DebugLoc::getUnknownLoc()), 
       TLI(tli), DAG(dag), FuncInfo(funcinfo), OptLevel(ol),
       HasTailCall(false),
@@ -396,7 +309,7 @@ public:
   void init(GCFunctionInfo *gfi, AliasAnalysis &aa);
 
   /// clear - Clear out the curret SelectionDAG and the associated
-  /// state and prepare this SelectionDAGLowering object to be used
+  /// state and prepare this SelectionDAGBuilder object to be used
   /// for a new block. This doesn't clear out information about
   /// additional blocks that are needed to complete switch lowering
   /// or PHI node updating; that information is cleared out as it is
@@ -568,11 +481,6 @@ private:
   const char *implVisitBinaryAtomic(CallInst& I, ISD::NodeType Op);
   const char *implVisitAluOverflow(CallInst &I, ISD::NodeType Op);
 };
-
-/// AddCatchInfo - Extract the personality and type infos from an eh.selector
-/// call, and add them to the specified machine basic block.
-void AddCatchInfo(CallInst &I, MachineModuleInfo *MMI,
-                  MachineBasicBlock *MBB);
 
 } // end namespace llvm
 
