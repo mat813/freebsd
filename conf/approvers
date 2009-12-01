@@ -19,7 +19,7 @@
 #^head/				re
 #^stable/8/			re
 #^stable/7/			re
-^releng/8.0/			re
+^releng/8.0/			(security-officer|so)
 ^releng/7.[0-2]/		(security-officer|so)
 ^releng/6.[0-4]/		(security-officer|so)
 ^releng/5.[0-5]/		(security-officer|so)
