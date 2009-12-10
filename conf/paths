@@ -60,6 +60,7 @@
 ^vendor/clang
 ^vendor/cpio
 ^vendor/ee
+^vendor/expat
 ^vendor/file
 ^vendor/gdb
 ^vendor/gdtoa
