@@ -1,4 +1,4 @@
-//===--- CGCXXRtti.cpp - Emit LLVM Code for C++ RTTI descriptors ----------===//
+//===--- CGCXXRTTI.cpp - Emit LLVM Code for C++ RTTI descriptors ----------===//
 //
 //                     The LLVM Compiler Infrastructure
 //
@@ -17,14 +17,35 @@
 using namespace clang;
 using namespace CodeGen;
 
-class RttiBuilder {
+namespace {
+class RTTIBuilder {
   CodeGenModule &CGM;  // Per-module state.
   llvm::LLVMContext &VMContext;
   const llvm::Type *Int8PtrTy;
   llvm::SmallSet<const CXXRecordDecl *, 16> SeenVBase;
   llvm::SmallSet<const CXXRecordDecl *, 32> SeenBase;
+
+  // Type info flags.
+  enum {
+    /// TI_Const - Type has const qualifier.
+    TI_Const = 0x1,
+    
+    /// TI_Volatile - Type has volatile qualifier.
+    TI_Volatile = 0x2,
+
+    /// TI_Restrict - Type has restrict qualifier.
+    TI_Restrict = 0x4,
+    
+    /// TI_Incomplete - Type is incomplete.
+    TI_Incomplete = 0x8,
+
+    /// TI_ContainingClassIncomplete - Containing class is incomplete.
+    /// (in pointer to member).
+    TI_ContainingClassIncomplete = 0x10
+  };
+  
 public:
-  RttiBuilder(CodeGenModule &cgm)
+  RTTIBuilder(CodeGenModule &cgm)
     : CGM(cgm), VMContext(cgm.getModule().getContext()),
       Int8PtrTy(llvm::Type::getInt8PtrTy(VMContext)) { }
 
@@ -47,27 +68,37 @@ public:
     return llvm::ConstantExpr::getBitCast(C, Int8PtrTy);
   }
 
+  // FIXME: This should be removed, and clients should pass in the linkage
+  // directly instead.
+  static inline llvm::GlobalVariable::LinkageTypes
+  GetLinkageFromExternFlag(bool Extern) {
+    if (Extern)
+      return llvm::GlobalValue::WeakODRLinkage;
+    
+    return llvm::GlobalValue::InternalLinkage;
+  }
+  
+  // FIXME: This should be removed, and clients should pass in the linkage
+  // directly instead.
   llvm::Constant *BuildName(QualType Ty, bool Hidden, bool Extern) {
+    return BuildName(Ty, Hidden, GetLinkageFromExternFlag(Extern));
+  }
+
+  llvm::Constant *BuildName(QualType Ty, bool Hidden, 
+                            llvm::GlobalVariable::LinkageTypes Linkage) {
     llvm::SmallString<256> OutName;
-    CGM.getMangleContext().mangleCXXRttiName(Ty, OutName);
+    CGM.getMangleContext().mangleCXXRTTIName(Ty, OutName);
     llvm::StringRef Name = OutName.str();
 
-    llvm::GlobalVariable::LinkageTypes linktype;
-    linktype = llvm::GlobalValue::LinkOnceODRLinkage;
-    if (!Extern)
-      linktype = llvm::GlobalValue::InternalLinkage;
+    llvm::GlobalVariable *OGV = CGM.getModule().getGlobalVariable(Name);
+    if (OGV && !OGV->isDeclaration())
+      return llvm::ConstantExpr::getBitCast(OGV, Int8PtrTy);
 
-    llvm::GlobalVariable *GV;
-    GV = CGM.getModule().getGlobalVariable(Name);
-    if (GV && !GV->isDeclaration())
-      return llvm::ConstantExpr::getBitCast(GV, Int8PtrTy);
+    llvm::Constant *C = llvm::ConstantArray::get(VMContext, Name.substr(4));
 
-    llvm::Constant *C;
-    C = llvm::ConstantArray::get(VMContext, Name.substr(4));
-
-    llvm::GlobalVariable *OGV = GV;
-    GV = new llvm::GlobalVariable(CGM.getModule(), C->getType(), true, linktype,
-                                  C, Name);
+    llvm::GlobalVariable *GV = 
+      new llvm::GlobalVariable(CGM.getModule(), C->getType(), true, Linkage,
+                               C, Name);
     if (OGV) {
       GV->takeName(OGV);
       llvm::Constant *NewPtr = llvm::ConstantExpr::getBitCast(GV,
@@ -94,11 +125,8 @@ public:
   llvm::Constant *BuildTypeRef(QualType Ty) {
     llvm::Constant *C;
 
-    if (!CGM.getContext().getLangOptions().Rtti)
-      return llvm::Constant::getNullValue(Int8PtrTy);
-
     llvm::SmallString<256> OutName;
-    CGM.getMangleContext().mangleCXXRtti(Ty, OutName);
+    CGM.getMangleContext().mangleCXXRTTI(Ty, OutName);
     llvm::StringRef Name = OutName.str();
 
     C = CGM.getModule().getGlobalVariable(Name);
@@ -158,19 +186,15 @@ public:
     return true;
   }
 
-  llvm::Constant *finish(std::vector<llvm::Constant *> &info,
+  llvm::Constant *finish(llvm::Constant *const *Values, unsigned NumValues,
                          llvm::GlobalVariable *GV,
-                         llvm::StringRef Name, bool Hidden, bool Extern) {
-    llvm::GlobalVariable::LinkageTypes linktype;
-    linktype = llvm::GlobalValue::LinkOnceODRLinkage;
-    if (!Extern)
-      linktype = llvm::GlobalValue::InternalLinkage;
-
-    llvm::Constant *C;
-    C = llvm::ConstantStruct::get(VMContext, &info[0], info.size(), false);
+                         llvm::StringRef Name, bool Hidden, 
+                         llvm::GlobalVariable::LinkageTypes Linkage) {
+    llvm::Constant *C = 
+      llvm::ConstantStruct::get(VMContext, Values, NumValues, /*Packed=*/false);
 
     llvm::GlobalVariable *OGV = GV;
-    GV = new llvm::GlobalVariable(CGM.getModule(), C->getType(), true, linktype,
+    GV = new llvm::GlobalVariable(CGM.getModule(), C->getType(), true, Linkage,
                                   C, Name);
     if (OGV) {
       GV->takeName(OGV);
@@ -185,14 +209,16 @@ public:
   }
 
 
-  llvm::Constant *Buildclass_type_info(const CXXRecordDecl *RD) {
-    if (!CGM.getContext().getLangOptions().Rtti)
-      return llvm::Constant::getNullValue(Int8PtrTy);
-
+  llvm::Constant *
+  Buildclass_type_info(const CXXRecordDecl *RD,
+                       llvm::GlobalVariable::LinkageTypes Linkage) {
+    std::vector<llvm::Constant *> info;
+    assert(info.empty() && "Info vector must be empty!");
+    
     llvm::Constant *C;
 
     llvm::SmallString<256> OutName;
-    CGM.getMangleContext().mangleCXXRtti(CGM.getContext().getTagDeclType(RD),
+    CGM.getMangleContext().mangleCXXRTTI(CGM.getContext().getTagDeclType(RD),
                                          OutName);
     llvm::StringRef Name = OutName.str();
 
@@ -201,10 +227,11 @@ public:
     if (GV && !GV->isDeclaration())
       return llvm::ConstantExpr::getBitCast(GV, Int8PtrTy);
 
-    std::vector<llvm::Constant *> info;
-
+    // If we're in an anonymous namespace, then we always want internal linkage.
+    if (RD->isInAnonymousNamespace() || !RD->hasLinkage())
+      Linkage = llvm::GlobalVariable::InternalLinkage;
+    
     bool Hidden = CGM.getDeclVisibilityMode(RD) == LangOptions::Hidden;
-    bool Extern = !RD->isInAnonymousNamespace();
 
     bool simple = false;
     if (RD->getNumBases() == 0)
@@ -216,7 +243,7 @@ public:
       C = BuildVtableRef("_ZTVN10__cxxabiv121__vmi_class_type_infoE");
     info.push_back(C);
     info.push_back(BuildName(CGM.getContext().getTagDeclType(RD), Hidden,
-                             Extern));
+                             Linkage));
 
     // If we have no bases, there are no more fields.
     if (RD->getNumBases()) {
@@ -230,7 +257,7 @@ public:
              e = RD->bases_end(); i != e; ++i) {
         const CXXRecordDecl *Base =
           cast<CXXRecordDecl>(i->getType()->getAs<RecordType>()->getDecl());
-        info.push_back(CGM.GenerateRttiRef(Base));
+        info.push_back(CGM.GetAddrOfRTTI(Base));
         if (simple)
           break;
         int64_t offset;
@@ -249,12 +276,12 @@ public:
       }
     }
 
-    return finish(info, GV, Name, Hidden, Extern);
+    return finish(&info[0], info.size(), GV, Name, Hidden, Linkage);
   }
 
   /// - BuildFlags - Build a __flags value for __pbase_type_info.
-  llvm::Constant *BuildInt(int f) {
-    return llvm::ConstantInt::get(llvm::Type::getInt32Ty(VMContext), f);
+  llvm::Constant *BuildInt(unsigned n) {
+    return llvm::ConstantInt::get(llvm::Type::getInt32Ty(VMContext), n);
   }
 
   bool DecideExtern(QualType Ty) {
@@ -266,7 +293,7 @@ public:
       return DecideExtern(PT->getPointeeType());
     if (const RecordType *RT = Ty->getAs<RecordType>())
       if (const CXXRecordDecl *RD = dyn_cast<CXXRecordDecl>(RT->getDecl()))
-        return !RD->isInAnonymousNamespace();
+        return !RD->isInAnonymousNamespace() && RD->hasLinkage();
     return true;
   }
 
@@ -284,10 +311,13 @@ public:
   }
 
   llvm::Constant *BuildPointerType(QualType Ty) {
+    std::vector<llvm::Constant *> info;
+    assert(info.empty() && "Info vector must be empty!");
+    
     llvm::Constant *C;
 
     llvm::SmallString<256> OutName;
-    CGM.getMangleContext().mangleCXXRtti(Ty, OutName);
+    CGM.getMangleContext().mangleCXXRTTI(Ty, OutName);
     llvm::StringRef Name = OutName.str();
 
     llvm::GlobalVariable *GV;
@@ -295,52 +325,58 @@ public:
     if (GV && !GV->isDeclaration())
       return llvm::ConstantExpr::getBitCast(GV, Int8PtrTy);
 
-    std::vector<llvm::Constant *> info;
-
     bool Extern = DecideExtern(Ty);
     bool Hidden = DecideHidden(Ty);
 
-    QualType PTy = Ty->getPointeeType();
-    QualType BTy;
-    bool PtrMem = false;
-    if (const MemberPointerType *MPT = dyn_cast<MemberPointerType>(Ty)) {
-      PtrMem = true;
-      BTy = QualType(MPT->getClass(), 0);
-      PTy = MPT->getPointeeType();
-    }
+    const MemberPointerType *PtrMemTy = dyn_cast<MemberPointerType>(Ty);
+    QualType PointeeTy;
+    
+    if (PtrMemTy)
+      PointeeTy = PtrMemTy->getPointeeType();
+    else
+      PointeeTy = Ty->getPointeeType();
 
-    if (PtrMem)
+    if (PtrMemTy)
       C = BuildVtableRef("_ZTVN10__cxxabiv129__pointer_to_member_type_infoE");
     else
       C = BuildVtableRef("_ZTVN10__cxxabiv119__pointer_type_infoE");
+    
     info.push_back(C);
     info.push_back(BuildName(Ty, Hidden, Extern));
-    Qualifiers Q = PTy.getQualifiers();
-    PTy = CGM.getContext().getCanonicalType(PTy).getUnqualifiedType();
-    int flags = 0;
-    flags += Q.hasConst() ? 0x1 : 0;
-    flags += Q.hasVolatile() ? 0x2 : 0;
-    flags += Q.hasRestrict() ? 0x4 : 0;
-    flags += Ty.getTypePtr()->isIncompleteType() ? 0x8 : 0;
-    if (PtrMem && BTy.getTypePtr()->isIncompleteType())
-      flags += 0x10;
-
-    info.push_back(BuildInt(flags));
+    Qualifiers Q = PointeeTy.getQualifiers();
+    
+    PointeeTy = 
+      CGM.getContext().getCanonicalType(PointeeTy).getUnqualifiedType();
+    
+    unsigned Flags = 0;
+    if (Q.hasConst())
+      Flags |= TI_Const;
+    if (Q.hasVolatile())
+      Flags |= TI_Volatile;
+    if (Q.hasRestrict())
+      Flags |= TI_Restrict;
+    
+    if (Ty->isIncompleteType())
+      Flags |= TI_Incomplete;
+  
+    if (PtrMemTy && PtrMemTy->getClass()->isIncompleteType())
+      Flags |= TI_ContainingClassIncomplete;
+    
+    info.push_back(BuildInt(Flags));
     info.push_back(BuildInt(0));
-    info.push_back(BuildType(PTy));
+    info.push_back(BuildType(PointeeTy));
 
-    if (PtrMem)
-      info.push_back(BuildType(BTy));
+    if (PtrMemTy)
+      info.push_back(BuildType(QualType(PtrMemTy->getClass(), 0)));
 
     // We always generate these as hidden, only the name isn't hidden.
-    return finish(info, GV, Name, true, Extern);
+    return finish(&info[0], info.size(), GV, Name, /*Hidden=*/true, 
+                  GetLinkageFromExternFlag(Extern));
   }
 
   llvm::Constant *BuildSimpleType(QualType Ty, const char *vtbl) {
-    llvm::Constant *C;
-
     llvm::SmallString<256> OutName;
-    CGM.getMangleContext().mangleCXXRtti(Ty, OutName);
+    CGM.getMangleContext().mangleCXXRTTI(Ty, OutName);
     llvm::StringRef Name = OutName.str();
 
     llvm::GlobalVariable *GV;
@@ -348,26 +384,26 @@ public:
     if (GV && !GV->isDeclaration())
       return llvm::ConstantExpr::getBitCast(GV, Int8PtrTy);
 
-    std::vector<llvm::Constant *> info;
-
     bool Extern = DecideExtern(Ty);
     bool Hidden = DecideHidden(Ty);
 
-    C = BuildVtableRef(vtbl);
-    info.push_back(C);
-    info.push_back(BuildName(Ty, Hidden, Extern));
-
+    llvm::Constant *Info[] = {
+      BuildVtableRef(vtbl), BuildName(Ty, Hidden, Extern)
+    };
+    
     // We always generate these as hidden, only the name isn't hidden.
-    return finish(info, GV, Name, true, Extern);
+    return finish(&Info[0], llvm::array_lengthof(Info), GV, Name, 
+                  /*Hidden=*/true, GetLinkageFromExternFlag(Extern));
   }
 
+  /// BuildType - Builds the type info for the given type.
   llvm::Constant *BuildType(QualType Ty) {
     const clang::Type &Type
       = *CGM.getContext().getCanonicalType(Ty).getTypePtr();
 
     if (const RecordType *RT = Ty.getTypePtr()->getAs<RecordType>())
       if (const CXXRecordDecl *RD = cast<CXXRecordDecl>(RT->getDecl()))
-        return Buildclass_type_info(RD);
+        return BuildClassTypeInfo(RD);
 
     switch (Type.getTypeClass()) {
     default: {
@@ -405,22 +441,65 @@ public:
       return BuildSimpleType(Ty, "_ZTVN10__cxxabiv116__enum_type_infoE");
     }
   }
-};
+  
+  /// BuildClassTypeInfo - Builds the class type info (or a reference to it)
+  /// for the given record decl.
+  llvm::Constant *BuildClassTypeInfo(const CXXRecordDecl *RD) {
+    const CXXMethodDecl *KeyFunction = 0;
 
-llvm::Constant *CodeGenModule::GenerateRttiRef(const CXXRecordDecl *RD) {
-  RttiBuilder b(*this);
+    if (RD->isDynamicClass())
+      KeyFunction = CGM.getContext().getKeyFunction(RD);
+    
+    if (KeyFunction) {
+      // If the key function is defined in this translation unit, then the RTTI
+      // related constants should also be emitted here, with external linkage.
+      if (KeyFunction->getBody())
+        return Buildclass_type_info(RD, llvm::GlobalValue::ExternalLinkage);
+      
+      // Otherwise, we just want a reference to the type info.
+      return Buildclass_type_infoRef(RD);
+    }
+    
+    // If there is no key function (or if the record doesn't have any virtual
+    // member functions or virtual bases), emit the type info with weak_odr
+    // linkage.
+    return Buildclass_type_info(RD, llvm::GlobalValue::WeakODRLinkage);
+  }
+};
+}
+
+llvm::Constant *CodeGenModule::GetAddrOfRTTI(const CXXRecordDecl *RD) {
+  if (!getContext().getLangOptions().RTTI) {
+    const llvm::Type *Int8PtrTy = llvm::Type::getInt8PtrTy(VMContext);
+    return llvm::Constant::getNullValue(Int8PtrTy);
+  }
+  
+  return RTTIBuilder(*this).BuildClassTypeInfo(RD);
+}
+
+llvm::Constant *CodeGenModule::GetAddrOfRTTI(QualType Ty) {
+  if (!getContext().getLangOptions().RTTI) {
+    const llvm::Type *Int8PtrTy = llvm::Type::getInt8PtrTy(VMContext);
+    return llvm::Constant::getNullValue(Int8PtrTy);
+  }
+  
+  return RTTIBuilder(*this).BuildType(Ty);
+}
+
+llvm::Constant *CodeGenModule::GenerateRTTIRef(const CXXRecordDecl *RD) {
+  RTTIBuilder b(*this);
 
   return b.Buildclass_type_infoRef(RD);
 }
 
-llvm::Constant *CodeGenModule::GenerateRtti(const CXXRecordDecl *RD) {
-  RttiBuilder b(*this);
+llvm::Constant *CodeGenModule::GenerateRTTI(const CXXRecordDecl *RD) {
+  RTTIBuilder b(*this);
 
-  return b.Buildclass_type_info(RD);
+  return b.Buildclass_type_info(RD, llvm::GlobalValue::ExternalLinkage);
 }
 
-llvm::Constant *CodeGenModule::GenerateRtti(QualType Ty) {
-  RttiBuilder b(*this);
+llvm::Constant *CodeGenModule::GenerateRTTI(QualType Ty) {
+  RTTIBuilder b(*this);
 
   return b.BuildType(Ty);
 }
