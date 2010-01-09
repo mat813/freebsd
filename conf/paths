@@ -71,6 +71,7 @@
 ^vendor/ncurses
 ^vendor/netcat
 ^vendor/ntp
+^vendor/one-true-awk
 ^vendor/openbsm
 ^vendor/openpam
 ^vendor/opensolaris
