@@ -64,6 +64,7 @@
 ^vendor/file
 ^vendor/gdb
 ^vendor/gdtoa
+^vendor/groff
 ^vendor/less
 ^vendor/libbegemot
 ^vendor/libpcap
