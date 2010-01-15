@@ -28,11 +28,11 @@
 # Release engineering static snapshot tags.  Magic is required here.
 ^release/
 
-# Vendor import work area.  Not open until we're certain we're not reverting to cvs.
-#^vendor/
-#^vendor-crypto/
-#^vendor-cddl/
-#^vendor-sys/
+# Vendor import work area.
+^vendor/
+^vendor-crypto/
+^vendor-cddl/
+^vendor-sys/
 
 # CVSROOT's new home
 ^svnadmin/conf/
@@ -44,46 +44,3 @@
 
 # misc.
 ^ROADMAP.txt
-
-^vendor-crypto/openssh
-^vendor-crypto/openssl
-
-^vendor-sys/acpica
-^vendor-sys/ath
-^vendor-sys/opensolaris
-^vendor-sys/pf
-^vendor-sys/x86emu
-
-^vendor/bind9
-^vendor/binutils
-^vendor/bsnmp
-^vendor/clang
-^vendor/cpio
-^vendor/ee
-^vendor/expat
-^vendor/file
-^vendor/gdb
-^vendor/gdtoa
-^vendor/groff
-^vendor/less
-^vendor/libbegemot
-^vendor/libpcap
-^vendor/llvm
-^vendor/ncurses
-^vendor/netcat
-^vendor/ntp
-^vendor/one-true-awk
-^vendor/openbsm
-^vendor/openpam
-^vendor/opensolaris
-^vendor/pf
-^vendor/resolver
-^vendor/sendmail
-^vendor/tcpdump
-^vendor/tcsh
-^vendor/top
-^vendor/tzcode
-^vendor/tzdata
-^vendor/v4l
-^vendor/wpa
-
