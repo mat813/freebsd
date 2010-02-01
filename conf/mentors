@@ -10,10 +10,11 @@
 # Sort by mentee login name.
 
 # Mentee	Mentor		Optional comment
-cbzimmer	sam
 brucec		rrs
+cbzimmer	sam
 dchagin		kib
 eri		mlaier		Co-mentor: thompsa
+gabor		delphij
 gavin		ed
 ivoras		gnn
 jh		trasz		Co-mentor: rwatson
@@ -26,7 +27,7 @@ remko		imp
 sbruno		scottl
 snb		dwmalone
 sson		gnn
-versus		dds
 uqs		philip
+versus		dds
 will		ken
 zml		dfr
