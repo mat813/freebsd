@@ -1,4 +1,4 @@
-##===- tools/lto/Makefile ----------------------------------*- Makefile -*-===##
+##===- tools/ed/Makefile -----------------------------------*- Makefile -*-===##
 # 
 #                     The LLVM Compiler Infrastructure
 #
@@ -8,7 +8,9 @@
 ##===----------------------------------------------------------------------===##
 
 LEVEL = ../..
-LIBRARYNAME = LTO
+LIBRARYNAME = EnhancedDisassembly
+
+BUILT_SOURCES = EDInfo.inc
 
 # Include this here so we can get the configuration of the targets
 # that have been configured for construction. We have to do this 
@@ -18,7 +20,7 @@ include $(LEVEL)/Makefile.config
 LINK_LIBS_IN_SHARED = 1
 SHARED_LIBRARY = 1
 
-LINK_COMPONENTS := $(TARGETS_TO_BUILD) ipo scalaropts linker bitreader bitwriter
+LINK_COMPONENTS := $(TARGETS_TO_BUILD) x86asmprinter x86disassembler
 
 include $(LEVEL)/Makefile.common
 
@@ -32,7 +34,7 @@ ifeq ($(HOST_OS),Darwin)
     # extra options to override libtool defaults 
     LLVMLibsOptions    := $(LLVMLibsOptions)  \
                          -avoid-version \
-                         -Wl,-exported_symbols_list -Wl,$(PROJ_SRC_DIR)/lto.exports \
+                         -Wl,-exported_symbols_list -Wl,$(PROJ_SRC_DIR)/EnhancedDisassembly.exports \
                          -Wl,-dead_strip \
                          -Wl,-seg1addr -Wl,0xE0000000 
 
@@ -44,3 +46,10 @@ ifeq ($(HOST_OS),Darwin)
                             -Wl,"@executable_path/../lib/lib$(LIBRARYNAME)$(SHLIBEXT)"
     endif
 endif
+
+EDInfo.inc:	$(TBLGEN)
+	$(Echo) "Building semantic information header"
+	$(Verb) $(TableGen) -o $(call SYSPATH, $@) -gen-enhanced-disassembly-header /dev/null
+
+clean::
+	-$(Verb) $(RM) -f EDInfo.inc
