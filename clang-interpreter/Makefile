@@ -1,4 +1,4 @@
-##===- examples/wpa/Makefile -------------------------------*- Makefile -*-===##
+##===- examples/clang-interpreter/Makefile -----------------*- Makefile -*-===##
 #
 #                     The LLVM Compiler Infrastructure
 #
@@ -9,7 +9,7 @@
 
 LEVEL = ../../../..
 
-TOOLNAME = clang-wpa
+TOOLNAME = clang-interpreter
 CPPFLAGS += -I$(PROJ_SRC_DIR)/../../include -I$(PROJ_OBJ_DIR)/../../include
 NO_INSTALL = 1
 
@@ -21,8 +21,10 @@ TOOL_NO_EXPORTS = 1
 # LINK_COMPONENTS before including Makefile.rules
 include $(LEVEL)/Makefile.config
 
-LINK_COMPONENTS := bitreader mc core
-USEDLIBS = clangIndex.a clangFrontend.a clangDriver.a clangSema.a \
-	   clangAnalysis.a clangAST.a clangParse.a clangLex.a clangBasic.a
+LINK_COMPONENTS := jit interpreter nativecodegen bitreader bitwriter ipo \
+	selectiondag
+USEDLIBS = clangFrontend.a clangDriver.a clangCodeGen.a clangSema.a \
+           clangChecker.a clangAnalysis.a clangRewrite.a  clangAST.a \
+           clangParse.a clangLex.a clangBasic.a
 
 include $(LLVM_SRC_ROOT)/Makefile.rules
