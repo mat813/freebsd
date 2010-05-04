@@ -306,6 +306,7 @@ public:
   bool VisitExplicitCastExpr(ExplicitCastExpr *E);
   bool VisitObjCMessageExpr(ObjCMessageExpr *E);
   bool VisitObjCEncodeExpr(ObjCEncodeExpr *E);
+  bool VisitOffsetOfExpr(OffsetOfExpr *E);
   bool VisitSizeOfAlignOfExpr(SizeOfAlignOfExpr *E);
 };
 
@@ -943,6 +944,14 @@ bool CursorVisitor::VisitBlockExpr(BlockExpr *B) {
   return Visit(B->getBlockDecl());
 }
 
+bool CursorVisitor::VisitOffsetOfExpr(OffsetOfExpr *E) {
+  // FIXME: Visit fields as well?
+  if (Visit(E->getTypeSourceInfo()->getTypeLoc()))
+    return true;
+  
+  return VisitExpr(E);
+}
+
 bool CursorVisitor::VisitSizeOfAlignOfExpr(SizeOfAlignOfExpr *E) {
   if (E->isArgumentType()) {
     if (TypeSourceInfo *TSInfo = E->getArgumentTypeInfo())
@@ -1287,9 +1296,9 @@ CXSourceLocation clang_getLocation(CXTranslationUnit tu,
                                    CXFile file,
                                    unsigned line,
                                    unsigned column) {
-  if (!tu)
+  if (!tu || !file)
     return clang_getNullLocation();
-
+  
   ASTUnit *CXXUnit = static_cast<ASTUnit *>(tu);
   SourceLocation SLoc
     = CXXUnit->getSourceManager().getLocation(
