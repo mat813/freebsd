@@ -204,6 +204,7 @@ maptable = [
   ( 'releng/7.1/',   'RELENG_7_1' ),
   ( 'releng/7.2/',   'RELENG_7_2' ),
   ( 'releng/7.3/',   'RELENG_7_3' ),
+  ( 'releng/7.4/',   'RELENG_7_4' ),
   ( 'releng/8.0/',   'RELENG_8_0' ),
   ( 'releng/8.1/',   'RELENG_8_1' ),
 ]
@@ -325,8 +326,14 @@ def exportrev(pool, fs_ptr, rev, cvspath):
     #  continue
     #if p == 'head/lib/libc/stdio/asprintf.c' and k == 'D':
     #  continue
-    if p == 'head/tools/build/options/WITH_BIND_LIBS' and k == 'A' and rev == 193280:
-      continue
+    #if p == 'head/tools/build/options/WITH_BIND_LIBS' and k == 'A' and rev == 193280:
+    #  continue
+    #if p == 'head/usr.bin/csup/Makefile' and k == 'D' and rev == 204556:
+    #  continue
+    #if p == 'stable/8/release/picobsd/floppy.tree/sbin' and k == 'A' and rev == 204868:
+    #  continue
+    #if p == 'stable/8/release/picobsd/floppy.tree/sbin' and k == 'D':
+    #  continue
     makedirs(workpath, _dirname(path), 'src')
     # Now the directory for the files must exist, and branch tag will be sticky
     assert os.path.isdir(os.path.join(workpath, _dirname(path)))
