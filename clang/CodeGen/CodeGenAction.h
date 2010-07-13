@@ -7,6 +7,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+#ifndef LLVM_CLANG_CODEGEN_CODE_GEN_ACTION_H
+#define LLVM_CLANG_CODEGEN_CODE_GEN_ACTION_H
+
 #include "clang/Frontend/FrontendAction.h"
 #include "llvm/ADT/OwningPtr.h"
 
@@ -24,8 +27,12 @@ private:
 protected:
   CodeGenAction(unsigned _Act);
 
+  virtual bool hasIRSupport() const;
+
   virtual ASTConsumer *CreateASTConsumer(CompilerInstance &CI,
                                          llvm::StringRef InFile);
+
+  virtual void ExecuteAction();
 
   virtual void EndSourceFileAction();
 
@@ -68,3 +75,5 @@ public:
 };
 
 }
+
+#endif
