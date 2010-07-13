@@ -11,7 +11,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include "clang/Frontend/AnalysisConsumer.h"
+#include "clang/Checker/AnalysisConsumer.h"
 #include "clang/AST/ASTConsumer.h"
 #include "clang/AST/Decl.h"
 #include "clang/AST/DeclCXX.h"
@@ -27,9 +27,11 @@
 #include "clang/Checker/BugReporter/BugReporter.h"
 #include "clang/Checker/PathSensitive/GRExprEngine.h"
 #include "clang/Checker/PathSensitive/GRTransferFuncs.h"
+#include "clang/Checker/PathDiagnosticClients.h"
+#include "GRExprEngineExperimentalChecks.h"
 #include "clang/Basic/FileManager.h"
 #include "clang/Basic/SourceManager.h"
-#include "clang/Frontend/PathDiagnosticClients.h"
+#include "clang/Frontend/AnalyzerOptions.h"
 #include "clang/Lex/Preprocessor.h"
 #include "llvm/Support/raw_ostream.h"
 #include "llvm/System/Path.h"
@@ -79,8 +81,6 @@ public:
   const Preprocessor &PP;
   const std::string OutDir;
   AnalyzerOptions Opts;
-  bool declDisplayed;
-
 
   // PD is owned by AnalysisManager.
   PathDiagnosticClient *PD;
@@ -94,7 +94,7 @@ public:
                    const std::string& outdir,
                    const AnalyzerOptions& opts)
     : Ctx(0), PP(pp), OutDir(outdir),
-      Opts(opts), declDisplayed(false), PD(0) {
+      Opts(opts), PD(0) {
     DigestAnalyzerOptions();
   }
 
@@ -137,10 +137,9 @@ public:
   }
 
   void DisplayFunction(const Decl *D) {
-    if (!Opts.AnalyzerDisplayProgress || declDisplayed)
+    if (!Opts.AnalyzerDisplayProgress)
       return;
 
-    declDisplayed = true;
     SourceManager &SM = Mgr->getASTContext().getSourceManager();
     PresumedLoc Loc = SM.getPresumedLoc(D->getLocation());
     llvm::errs() << "ANALYZE: " << Loc.getFilename();
@@ -181,7 +180,7 @@ public:
   }
 
   virtual void HandleTranslationUnit(ASTContext &C);
-  void HandleCode(Decl *D, Stmt* Body, Actions& actions);
+  void HandleCode(Decl *D, Actions& actions);
 };
 } // end anonymous namespace
 
@@ -209,7 +208,8 @@ void AnalysisConsumer::HandleTranslationUnit(ASTContext &C) {
         if (!Opts.AnalyzeSpecificFunction.empty() &&
             FD->getDeclName().getAsString() != Opts.AnalyzeSpecificFunction)
           break;
-        HandleCode(FD, FD->getBody(), FunctionActions);
+        DisplayFunction(FD);
+        HandleCode(FD, FunctionActions);
       }
       break;
     }
@@ -221,14 +221,15 @@ void AnalysisConsumer::HandleTranslationUnit(ASTContext &C) {
         if (!Opts.AnalyzeSpecificFunction.empty() &&
             Opts.AnalyzeSpecificFunction != MD->getSelector().getAsString())
           break;
-        HandleCode(MD, MD->getBody(), ObjCMethodActions);
+        DisplayFunction(MD);
+        HandleCode(MD, ObjCMethodActions);
       }
       break;
     }
 
     case Decl::ObjCImplementation: {
       ObjCImplementationDecl* ID = cast<ObjCImplementationDecl>(*I);
-      HandleCode(ID, 0, ObjCImplementationActions);
+      HandleCode(ID, ObjCImplementationActions);
 
       for (ObjCImplementationDecl::method_iterator MI = ID->meth_begin(), 
              ME = ID->meth_end(); MI != ME; ++MI) {
@@ -236,7 +237,7 @@ void AnalysisConsumer::HandleTranslationUnit(ASTContext &C) {
           if (!Opts.AnalyzeSpecificFunction.empty() &&
              Opts.AnalyzeSpecificFunction != (*MI)->getSelector().getAsString())
             break;
-          HandleCode(*MI, (*MI)->getBody(), ObjCMethodActions);
+          HandleCode(*MI, ObjCMethodActions);
         }
       }
       break;
@@ -269,7 +270,7 @@ static void FindBlocks(DeclContext *D, llvm::SmallVectorImpl<Decl*> &WL) {
       FindBlocks(DC, WL);
 }
 
-void AnalysisConsumer::HandleCode(Decl *D, Stmt* Body, Actions& actions) {
+void AnalysisConsumer::HandleCode(Decl *D, Actions& actions) {
 
   // Don't run the actions if an error has occured with parsing the file.
   Diagnostic &Diags = PP.getDiagnostics();
@@ -278,8 +279,9 @@ void AnalysisConsumer::HandleCode(Decl *D, Stmt* Body, Actions& actions) {
 
   // Don't run the actions on declarations in header files unless
   // otherwise specified.
-  if (!Opts.AnalyzeAll &&
-      !Ctx->getSourceManager().isFromMainFile(D->getLocation()))
+  SourceManager &SM = Ctx->getSourceManager();
+  SourceLocation SL = SM.getInstantiationLoc(D->getLocation());
+  if (!Opts.AnalyzeAll && !SM.isFromMainFile(SL))
     return;
 
   // Clear the AnalysisManager of old AnalysisContexts.
@@ -289,7 +291,7 @@ void AnalysisConsumer::HandleCode(Decl *D, Stmt* Body, Actions& actions) {
   llvm::SmallVector<Decl*, 10> WL;
   WL.push_back(D);
 
-  if (Body && Opts.AnalyzeNestedBlocks)
+  if (D->hasBody() && Opts.AnalyzeNestedBlocks)
     FindBlocks(cast<DeclContext>(D), WL);
 
   for (Actions::iterator I = actions.begin(), E = actions.end(); I != E; ++I)
@@ -338,6 +340,9 @@ static void ActionGRExprEngine(AnalysisConsumer &C, AnalysisManager& mgr,
 
   if (C.Opts.EnableExperimentalChecks)
     RegisterExperimentalChecks(Eng);
+
+  if (C.Opts.EnableIdempotentOperationChecker)
+    RegisterIdempotentOperationChecker(Eng);
 
   // Set the graph auditor.
   llvm::OwningPtr<ExplodedNode::Auditor> Auditor;
