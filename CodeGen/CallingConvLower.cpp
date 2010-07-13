@@ -80,13 +80,12 @@ CCState::AnalyzeFormalArguments(const SmallVectorImpl<ISD::InputArg> &Ins,
 
 /// CheckReturn - Analyze the return values of a function, returning true if
 /// the return can be performed without sret-demotion, and false otherwise.
-bool CCState::CheckReturn(const SmallVectorImpl<EVT> &OutTys,
-                          const SmallVectorImpl<ISD::ArgFlagsTy> &ArgsFlags,
+bool CCState::CheckReturn(const SmallVectorImpl<ISD::OutputArg> &Outs,
                           CCAssignFn Fn) {
   // Determine which register each value should be copied into.
-  for (unsigned i = 0, e = OutTys.size(); i != e; ++i) {
-    EVT VT = OutTys[i];
-    ISD::ArgFlagsTy ArgFlags = ArgsFlags[i];
+  for (unsigned i = 0, e = Outs.size(); i != e; ++i) {
+    EVT VT = Outs[i].VT;
+    ISD::ArgFlagsTy ArgFlags = Outs[i].Flags;
     if (Fn(i, VT, VT, CCValAssign::Full, ArgFlags, *this))
       return false;
   }
@@ -99,7 +98,7 @@ void CCState::AnalyzeReturn(const SmallVectorImpl<ISD::OutputArg> &Outs,
                             CCAssignFn Fn) {
   // Determine which register each value should be copied into.
   for (unsigned i = 0, e = Outs.size(); i != e; ++i) {
-    EVT VT = Outs[i].Val.getValueType();
+    EVT VT = Outs[i].VT;
     ISD::ArgFlagsTy ArgFlags = Outs[i].Flags;
     if (Fn(i, VT, VT, CCValAssign::Full, ArgFlags, *this)) {
 #ifndef NDEBUG
@@ -111,14 +110,13 @@ void CCState::AnalyzeReturn(const SmallVectorImpl<ISD::OutputArg> &Outs,
   }
 }
 
-
 /// AnalyzeCallOperands - Analyze the outgoing arguments to a call,
 /// incorporating info about the passed values into this state.
 void CCState::AnalyzeCallOperands(const SmallVectorImpl<ISD::OutputArg> &Outs,
                                   CCAssignFn Fn) {
   unsigned NumOps = Outs.size();
   for (unsigned i = 0; i != NumOps; ++i) {
-    EVT ArgVT = Outs[i].Val.getValueType();
+    EVT ArgVT = Outs[i].VT;
     ISD::ArgFlagsTy ArgFlags = Outs[i].Flags;
     if (Fn(i, ArgVT, ArgVT, CCValAssign::Full, ArgFlags, *this)) {
 #ifndef NDEBUG
