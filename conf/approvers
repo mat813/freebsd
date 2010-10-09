@@ -27,5 +27,5 @@
 ^releng/4.1[01]/		(security-officer|so)
 ^CVSROOT/avail			core
 ^svnadmin/conf/approvers	(core|re)
-^svnadmin/conf/access		core
+^svnadmin/conf/access		clusteradm
 ^head/LOCKS			core
