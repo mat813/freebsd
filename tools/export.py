@@ -207,6 +207,8 @@ maptable = [
   ( 'releng/7.4/',   'RELENG_7_4' ),
   ( 'releng/8.0/',   'RELENG_8_0' ),
   ( 'releng/8.1/',   'RELENG_8_1' ),
+  ( 'releng/8.2/',   'RELENG_8_2' ),
+  ( 'releng/8.3/',   'RELENG_8_3' ),
 ]
 
 def map2cvs(svnpath):
