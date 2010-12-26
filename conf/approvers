@@ -17,8 +17,8 @@
 # $FreeBSD$
 #
 #^head/				re
-^stable/8/			re
-^stable/7/			re
+#^stable/8/			re
+#^stable/7/			re
 ^releng/8.2/			re
 ^releng/7.4/			re
 ^releng/8.[0-1]/		(security-officer|so)
