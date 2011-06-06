@@ -1,12 +1,8 @@
 /*
  * Ok, so this isn't exactly pretty, so sue me.
  *
- * The basic idea is to filter the arguments, check that everything
- * is happy, then give the appropriate privs, and exec the real svnserve.
- *
- * Installed setuid-root, grants the appropriate gid, then revokes setuid.
- * We use this in a NIS override.  ie:
- *   +:*::::::::/usr/local/bin/svnssh
+ * FreeBSD Subversion tree ACL check helper.  The program looks in
+ * relevant access files to find out if the committer may commit.
  *
  * From: Id: cvssh.c,v 1.38 2008/05/31 02:54:58 peter Exp
  * $FreeBSD$
