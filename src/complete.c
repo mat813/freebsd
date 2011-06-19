@@ -1,8 +1,7 @@
-/*	$NetBSD: complete.c,v 1.10 2009/05/20 12:53:47 lukem Exp $	*/
-/*	from	NetBSD: complete.c,v 1.46 2009/04/12 10:18:52 lukem Exp	*/
+/*	$NetBSD: complete.c,v 1.38 2000/05/01 10:35:17 lukem Exp $	*/
 
 /*-
- * Copyright (c) 1997-2009 The NetBSD Foundation, Inc.
+ * Copyright (c) 1997-2000 The NetBSD Foundation, Inc.
  * All rights reserved.
  *
  * This code is derived from software contributed to The NetBSD Foundation
@@ -16,6 +15,13 @@
  * 2. Redistributions in binary form must reproduce the above copyright
  *    notice, this list of conditions and the following disclaimer in the
  *    documentation and/or other materials provided with the distribution.
+ * 3. All advertising materials mentioning features or use of this software
+ *    must display the following acknowledgement:
+ *	This product includes software developed by the NetBSD
+ *	Foundation, Inc. and its contributors.
+ * 4. Neither the name of The NetBSD Foundation nor the names of its
+ *    contributors may be used to endorse or promote products derived
+ *    from this software without specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY THE NETBSD FOUNDATION, INC. AND CONTRIBUTORS
  * ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
@@ -30,13 +36,9 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "tnftp.h"
-
-#if 0	/* tnftp */
-
 #include <sys/cdefs.h>
 #ifndef lint
-__RCSID(" NetBSD: complete.c,v 1.46 2009/04/12 10:18:52 lukem Exp  ");
+__RCSID("$NetBSD: complete.c,v 1.38 2000/05/01 10:35:17 lukem Exp $");
 #endif /* not lint */
 
 /*
@@ -52,8 +54,6 @@ __RCSID(" NetBSD: complete.c,v 1.46 2009/04/12 10:18:52 lukem Exp  ");
 #include <stdlib.h>
 #include <string.h>
 
-#endif	/* tnftp */
-
 #include "ftp_var.h"
 
 #ifndef NO_EDITCOMPLETE
@@ -68,7 +68,7 @@ static unsigned char complete_remote	(char *, int);
 static int
 comparstr(const void *a, const void *b)
 {
-	return (strcmp(*(const char * const *)a, *(const char * const *)b));
+	return (strcmp(*(const char **)a, *(const char **)b));
 }
 
 /*
@@ -87,7 +87,7 @@ complete_ambiguous(char *word, int list, StringList *words)
 {
 	char insertstr[MAXPATHLEN];
 	char *lastmatch, *p;
-	size_t i, j;
+	int i, j;
 	size_t matchlen, wordlen;
 
 	wordlen = strlen(word);
@@ -143,14 +143,14 @@ complete_command(char *word, int list)
 	size_t wordlen;
 	unsigned char rv;
 
-	words = ftp_sl_init();
+	words = xsl_init();
 	wordlen = strlen(word);
 
 	for (c = cmdtab; c->c_name != NULL; c++) {
 		if (wordlen > strlen(c->c_name))
 			continue;
 		if (strncmp(word, c->c_name, wordlen) == 0)
-			ftp_sl_add(words, ftp_strdup(c->c_name));
+			xsl_add(words, c->c_name);
 	}
 
 	rv = complete_ambiguous(word, list, words);
@@ -158,7 +158,7 @@ complete_command(char *word, int list)
 		if (el_insertstr(el, " ") == -1)
 			rv = CC_ERROR;
 	}
-	sl_free(words, 1);
+	sl_free(words, 0);
 	return (rv);
 }
 
@@ -200,7 +200,7 @@ complete_local(char *word, int list)
 	if ((dd = opendir(dir)) == NULL)
 		return (CC_ERROR);
 
-	words = ftp_sl_init();
+	words = xsl_init();
 	len = strlen(file);
 
 	for (dp = readdir(dd); dp != NULL; dp = readdir(dd)) {
@@ -217,8 +217,8 @@ complete_local(char *word, int list)
 		if (strncmp(file, dp->d_name, len) == 0) {
 			char *tcp;
 
-			tcp = ftp_strdup(dp->d_name);
-			ftp_sl_add(words, tcp);
+			tcp = xstrdup(dp->d_name);
+			xsl_add(words, tcp);
 		}
 	}
 	closedir(dd);
@@ -255,14 +255,14 @@ complete_option(char *word, int list)
 	size_t wordlen;
 	unsigned char rv;
 
-	words = ftp_sl_init();
+	words = xsl_init();
 	wordlen = strlen(word);
 
 	for (o = optiontab; o->name != NULL; o++) {
 		if (wordlen > strlen(o->name))
 			continue;
 		if (strncmp(word, o->name, wordlen) == 0)
-			ftp_sl_add(words, ftp_strdup(o->name));
+			xsl_add(words, o->name);
 	}
 
 	rv = complete_ambiguous(word, list, words);
@@ -270,7 +270,7 @@ complete_option(char *word, int list)
 		if (el_insertstr(el, " ") == -1)
 			rv = CC_ERROR;
 	}
-	sl_free(words, 1);
+	sl_free(words, 0);
 	return (rv);
 }
 
@@ -285,13 +285,10 @@ complete_remote(char *word, int list)
 	StringList	*words;
 	char		 dir[MAXPATHLEN];
 	char		*file, *cp;
-	size_t		 i;
+	int		 i;
 	unsigned char	 rv;
-	char		 cmdbuf[MAX_C_NAME];
-	char		*dummyargv[3] = { NULL, NULL, NULL };
 
-	(void)strlcpy(cmdbuf, "complete", sizeof(cmdbuf));
-	dummyargv[0] = cmdbuf;
+	char *dummyargv[] = { "complete", NULL, NULL };
 	dummyargv[1] = dir;
 
 	if ((file = strrchr(word, '/')) == NULL) {
@@ -307,11 +304,11 @@ complete_remote(char *word, int list)
 
 	if (dirchange || dirlist == NULL ||
 	    strcmp(dir, lastdir) != 0) {		/* dir not cached */
-		const char *emesg;
+		char *emesg;
 
 		if (dirlist != NULL)
 			sl_free(dirlist, 1);
-		dirlist = ftp_sl_init();
+		dirlist = xsl_init();
 
 		mflag = 1;
 		emesg = NULL;
@@ -329,8 +326,8 @@ complete_remote(char *word, int list)
 				tcp++;
 			else
 				tcp = cp;
-			tcp = ftp_strdup(tcp);
-			ftp_sl_add(dirlist, tcp);
+			tcp = xstrdup(tcp);
+			xsl_add(dirlist, tcp);
 		}
 		if (emesg != NULL) {
 			fprintf(ttyout, "\n%s\n", emesg);
@@ -340,13 +337,13 @@ complete_remote(char *word, int list)
 		dirchange = 0;
 	}
 
-	words = ftp_sl_init();
+	words = xsl_init();
 	for (i = 0; i < dirlist->sl_cur; i++) {
 		cp = dirlist->sl_str[i];
 		if (strlen(file) > strlen(cp))
 			continue;
 		if (strncmp(file, cp, strlen(file)) == 0)
-			ftp_sl_add(words, cp);
+			xsl_add(words, cp);
 	}
 	rv = complete_ambiguous(file, list, words);
 	sl_free(words, 0);
@@ -357,17 +354,17 @@ complete_remote(char *word, int list)
  * Generic complete routine
  */
 unsigned char
-complete(EditLine *cel, int ch)
+complete(EditLine *el, int ch)
 {
 	static char word[FTPBUFLEN];
-	static size_t lastc_argc, lastc_argo;
+	static int lastc_argc, lastc_argo;
 
 	struct cmd *c;
 	const LineInfo *lf;
-	int dolist, cmpltype;
-	size_t celems, len;
+	int celems, dolist, cmpltype;
+	size_t len;
 
-	lf = el_line(cel);
+	lf = el_line(el);
 	len = lf->lastchar - lf->buffer;
 	if (len >= sizeof(line))
 		return (CC_ERROR);
@@ -386,7 +383,7 @@ complete(EditLine *cel, int ch)
 	    && strncmp(word, margv[cursor_argc] ? margv[cursor_argc] : "",
 			cursor_argo) == 0)
 		dolist = 1;
-	else if (cursor_argc < (size_t)margc)
+	else if (cursor_argc < margc)
 		(void)strlcpy(word, margv[cursor_argc], cursor_argo + 1);
 	word[cursor_argo] = '\0';
 
@@ -429,8 +426,7 @@ complete(EditLine *cel, int ch)
 			}
 			return (complete_remote(word, dolist));
 		default:
-			errx(1, "complete: unknown complete type `%c'",
-			    cmpltype);
+			errx(1, "unknown complete type `%c'", cmpltype);
 			return (CC_ERROR);
 	}
 	/* NOTREACHED */

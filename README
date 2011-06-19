@@ -1,68 +1,61 @@
-WHAT IS TNFTP?
---------------
+WHAT IS LUKEMFTP?
+-----------------
 
-`tnftp' is a `port' of the NetBSD FTP client to other systems.
-See http://www.NetBSD.org/ for more details about NetBSD.
+`lukemftp' is what many users affectionately call the enhanced ftp
+client in NetBSD (http://www.netbsd.org).  The `lukem' comes from
+the account name of the NetBSD developer who wrote most of the
+enhancements: Luke Mewburn <lukem@netbsd.org>.
 
-tnftp was formerly known as `lukemftp'
-It was renamed to `tnftp' by Luke Mewburn in February 2003.
+This package is a `port' of the NetBSD ftp client to other systems.
 
 The enhancements over the standard ftp client in 4.4BSD (and
 derivatives) include:
 	* command-line editing within ftp
 	* command-line fetching of URLS, including support for:
-	    - http proxies (see $http_proxy, $ftp_proxy)
+	    - http proxies (c.f: $http_proxy, $ftp_proxy)
 	    - authentication
 	* configurable prompt
 	* context sensitive command and filename completion
 	* dynamic progress bar
 	* feature negotiation extensions from RFC 2389
-	  (see `feat' and `remopts')
+	  (c.f: `feat' and `remopts')
 	* extensions to ftp from the IETF ftpext working group
-	  (see `mlsd' and `mlst')
+	  (c.f: `mlsd' and `mlst')
 	* IPv6 support (from the WIDE project)
 	* modification time preservation
 	* paging of local and remote files, and of directory listings
-	  (see `lpage', `page', `pdir')
+	  (c.f: `lpage', `page', `pdir')
 	* passive mode support, with fallback to active mode
-	* retrieval of filenames listed in a given file (see `fget')
+	* retrieval of filenames listed in a given file (c.f: `fget')
 	* `set option' override of ftp environment variables
-	* TIS Firewall Toolkit gate ftp proxy support (see `gate')
-	* transfer-rate throttling (see `-T', `rate')
-	* uploading of files on the command line (see `-u')
-	* (Dante) SOCKS5 support
-
-Previous features, currently disabled until a test system is available:
-	* SOCKS4 support
+	* socks4/socks5 support
+	* TIS Firewall Toolkit gate ftp proxy support (c.f: `gate')
+	* transfer-rate throttling (c.f: `-T', `rate')
+	* uploading of files on the command line (c.f: `-u')
 
 
 INSTALLATION
 ------------
 
-Refer to `INSTALL' for more information on how to compile and install tnftp.
+Refer to `INSTALL' for more information on how to compile and install
+lukemftp.
 
 
 FEEDBACK / BUG REPORTS
 ----------------------
 
-Please email feedback back to the maintainer:
-	Luke Mewburn <lukem@NetBSD.org>.
+Please email feedback back to the maintainer: <lukem@netbsd.org>.
 
 
 COPYRIGHT
 ---------
 
-tnftp is covered by a BSD-style copyright notice.
-Please refer to the file `COPYING' for more information.
+lukemftp is covered by a BSD-style copyright notice. Please refer to
+the file `COPYING' for more information.
 
 
 AVAILABILITY
 ------------
 
-The primary ftp site for tnftp is:
-	ftp://ftp.NetBSD.org/pub/NetBSD/misc/tnftp/
-
-
-DOCUMENT REFERENCE
-------------------
-$NetBSD: README,v 1.10 2007/08/06 01:58:57 lukem Exp $
+The primary ftp site for lukemftp is:
+	ftp://ftp.netbsd.org/pub/NetBSD/misc/lukemftp/
