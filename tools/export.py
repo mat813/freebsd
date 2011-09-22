@@ -175,6 +175,7 @@ maptable = [
   ( 'stable/6/',     'RELENG_6' ),
   ( 'stable/7/',     'RELENG_7' ),
   ( 'stable/8/',     'RELENG_8' ),
+  ( 'stable/9/',     'RELENG_9' ),
   # errata / security / releng branches
   ( 'releng/ALPHA_2_0/','ALPHA_2_0' ),
   ( 'releng/BETA_2_0/', 'BETA_2_0' ),
@@ -209,6 +210,7 @@ maptable = [
   ( 'releng/8.1/',   'RELENG_8_1' ),
   ( 'releng/8.2/',   'RELENG_8_2' ),
   ( 'releng/8.3/',   'RELENG_8_3' ),
+  ( 'releng/9.0/',   'RELENG_9_0' ),
 ]
 
 def map2cvs(svnpath):
@@ -336,6 +338,54 @@ def exportrev(pool, fs_ptr, rev, cvspath):
     #  continue
     #if p == 'stable/8/release/picobsd/floppy.tree/sbin' and k == 'D':
     #  continue
+    #if p == 'head/contrib/llvm/tools/clang/www/demo/what is this directory.txt.' and k == 'A':
+    #  continue
+    #if p == 'head/contrib/llvm/lib/ExecutionEngine/JIT/JITDebugRegisterer.cpp' and k == 'D' and rev == 210299:
+    #  continue
+    #if p == 'head/contrib/llvm/lib/ExecutionEngine/JIT/JITDebugRegisterer.h' and k == 'D' and rev == 210299:
+    #  continue
+    #if p == 'head/sys/contrib/octeon-sdk/cvmx-interrupt-handler.S' and k == 'D' and rev == 215990:
+    #  continue
+    #if p == 'head/sys/contrib/octeon-sdk/cvmx-log-arc.S' and k == 'D' and rev == 215990:
+    #  continue
+    #if p == 'head/contrib/binutils/ld/emultempl/mipself.em' and k == 'D' and rev == 218822:
+    #  continue
+    #if p == 'head/contrib/binutils/libiberty/pexecute.c' and k == 'D' and rev == 218822:
+    #  continue
+    #if p == 'head/sys/modules/cxgbe/Makefile' and k == 'D' and rev == 220231:
+    #  continue
+    if p == 'head/share/man/man4/geom_map.4' and k == 'D' and rev == 222813:
+      continue
+    if p == 'head/sys/dev/iicbus/ad7417.c' and k == 'D' and rev == 222813:
+      continue
+    if p == 'head/sys/nfs/nfs_kdtrace.h' and k == 'D' and rev == 222813:
+      continue
+    if p == 'head/sys/sys/_stdint.h' and k == 'D' and rev == 222813:
+      continue
+    if p == 'head/tools/build/options/WITHOUT_GPIO' and k == 'D' and rev == 222813:
+      continue
+    if p == 'head/tools/build/options/WITH_OFED' and k == 'D' and rev == 222813:
+      continue
+    if p == 'head/tools/regression/bin/sh/builtins/set1.0' and k == 'D' and rev == 222813:
+      continue
+    if p == 'head/tools/regression/bin/sh/parser/dollar-quote1.0' and k == 'D' and rev == 222813:
+      continue
+    if p == 'head/tools/regression/bin/sh/parser/dollar-quote2.0' and k == 'D' and rev == 222813:
+      continue
+    if p == 'head/tools/regression/bin/sh/parser/dollar-quote3.0' and k == 'D' and rev == 222813:
+      continue
+    if p == 'head/tools/regression/bin/sh/parser/dollar-quote4.0' and k == 'D' and rev == 222813:
+      continue
+    if p == 'head/tools/regression/bin/sh/parser/dollar-quote5.0' and k == 'D' and rev == 222813:
+      continue
+    if p == 'head/tools/regression/bin/sh/parser/dollar-quote6.0' and k == 'D' and rev == 222813:
+      continue
+    if p == 'head/tools/regression/bin/sh/parser/dollar-quote7.0' and k == 'D' and rev == 222813:
+      continue
+    if p == 'head/tools/regression/bin/sh/parser/dollar-quote8.0' and k == 'D' and rev == 222813:
+      continue
+    if p == 'head/tools/regression/bin/sh/parser/dollar-quote9.0' and k == 'D' and rev == 222813:
+      continue
     makedirs(workpath, _dirname(path), 'src')
     # Now the directory for the files must exist, and branch tag will be sticky
     assert os.path.isdir(os.path.join(workpath, _dirname(path)))
@@ -380,6 +430,7 @@ def export(pool, repos_path, cvspath):
       print '==========> export rev ' + rev
       exportrev(pool, fs_ptr, last_rev + 1, cvspath)
       fs.change_rev_prop(fs_ptr, 0, 'fbsd:lastexp', rev)
+      #return
       continue
     print "."
     time.sleep(15)
