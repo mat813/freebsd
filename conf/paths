@@ -16,6 +16,7 @@
 ^stable/6/
 ^stable/7/
 ^stable/8/
+^stable/9/
 
 # Feature branches.  Not open until we're certain we're not reverting to cvs.
 ^user/
