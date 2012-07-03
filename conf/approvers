@@ -17,9 +17,10 @@
 # $FreeBSD$
 #
 #^head/				re
-#^stable/9/			re
+^stable/9/			re
 #^stable/8/			re
 #^stable/7/			re
+^releng/9.1/			(re)
 ^releng/9.0/			(security-officer|so)
 ^releng/8.[0-3]/		(security-officer|so)
 ^releng/7.[0-4]/		(security-officer|so)
