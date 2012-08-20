@@ -17,7 +17,7 @@
 # $FreeBSD$
 #
 #^head/				re
-^stable/9/			re
+#^stable/9/			re
 #^stable/8/			re
 #^stable/7/			re
 ^releng/9.1/			(re)
