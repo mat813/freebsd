@@ -31,9 +31,8 @@
 
 #define SVNROOT		"/s/svn"
 #define BASEACCESS	SVNROOT "/base/conf/access"
-/* Access cvs access files over nfs for now */
-#define DOCACCESS	"/home/dcvs/CVSROOT/access"
-#define PORTSACCESS	"/home/pcvs/CVSROOT/access"
+#define DOCACCESS	SVNROOT "/doc/conf/access"
+#define PORTSACCESS	SVNROOT "/ports/conf/access"
 
 #define NOCOMMIT	"/etc/nocommit"
 
@@ -44,7 +43,7 @@ static const char *env[] = {
 	NULL
 };
 
-static char username[32];
+static char username[_SC_LOGIN_NAME_MAX + 1];
 static char linebuf[1024];
 
 static void
@@ -61,6 +60,7 @@ msg(const char *fmt, ...)
 static void
 usage(void)
 {
+
 	msg("Only the \"svnserve -t\" command is available.");
 	exit(1);
 }
@@ -80,7 +80,7 @@ shell(char *argv[], int interactive)
 }
 
 static int
-karmacheck(FILE *fp, char *name)
+karmacheck(FILE *fp, const char *name)
 {
 	char buf[1024];
 	char *p, *s;
@@ -107,6 +107,26 @@ karmacheck(FILE *fp, char *name)
 	return karma;
 }
 
+static int
+read_access(const char *accessf, const char *name)
+{
+	FILE *fp;
+	int karma;
+
+	karma = 0;
+	/* Must not fail. */
+	fp = fopen(accessf, "r");
+	if (fp == NULL) {
+		msg("Cannot open %s", accessf);
+		exit(1);
+	} else {
+		karma = karmacheck(fp, name);
+		fclose(fp);
+	}
+
+	return (karma);
+}
+
 int
 main(int argc, char *argv[])
 {
@@ -119,12 +139,9 @@ main(int argc, char *argv[])
 	gid_t repogid;
 	gid_t mygroups[NGROUPS_MAX];
 	int ngroups;
-	int karma;
-	int shellkarma;
+	int karma, shellkarma;
 
 	umask(002);
-	karma = 0;
-	shellkarma = 0;
 	openlog("svnssh", LOG_PID | LOG_NDELAY, LOG_AUTH);
 	pw = getpwuid(getuid());
 	if (pw == NULL) {
@@ -136,9 +153,11 @@ main(int argc, char *argv[])
 		exit(1);
 	}
 
-	/* save in a static buffer */
+	/* Save in a static buffer. */
 	strlcpy(username, pw->pw_name, sizeof(username));
+	endpwent();
 
+	shellkarma = 0;
 	ngroups = getgroups(NGROUPS_MAX, mygroups);
 	if (ngroups > 0) {
 		gr = getgrnam("shell");
@@ -191,27 +210,15 @@ main(int argc, char *argv[])
 		exit(1);
 	}
 
-	fp = fopen(BASEACCESS, "r");
-	if (fp == NULL) {
-		msg("Cannot open %s", BASEACCESS);
-		exit(1);
-	} else {
-		karma += karmacheck(fp, pw->pw_name);
-		fclose(fp);
-	}
+	karma = 0;
+#ifdef BASEACCESS
+	karma += read_access(BASEACCESS, username);
+#endif
 #ifdef DOCACCESS
-	/* Allow for failures due to NFS */
-	if ((fp = fopen(DOCACCESS, "r")) != NULL) {
-		karma += karmacheck(fp, pw->pw_name);
-		fclose(fp);
-	}
+	karma += read_access(DOCACCESS, username);
 #endif
 #ifdef PORTSACCESS
-	/* Allow for failures due to NFS */
-	if ((fp = fopen(PORTSACCESS, "r")) != NULL) {
-		karma += karmacheck(fp, pw->pw_name);
-		fclose(fp);
-	}
+	karma += read_access(PORTSACCESS, username);
 #endif
 
 	if (karma > 0) {
