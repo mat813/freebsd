@@ -1,0 +1,26 @@
+# $FreeBSD$
+#
+# This is for folks who are doc committers, but who work on docs in
+# the src/ tree as well.
+#
+# Names must not be here without also being in doc repository access file.
+#
+# This file does not grant access to the src tree - it only causes
+# you to get copies of the src commit email and announcements.
+#
+# All doc committers implicitly have access to the src tree in order
+# to commit to man pages etc.
+#
+#       KEEP ALPHABETICALLY SORTED!!!
+#
+# Changes to email forwards can be made without doceng's approval.
+# Please use "Approved by: core (implicit), doceng (implicit)" to that
+# type of commits.
+#
+blackend
+chern
+jcamou
+joel
+mwlucas
+nik
+rushani
