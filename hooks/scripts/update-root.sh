@@ -3,6 +3,10 @@
 # check out/update SVN control files if needed
 REV="$2"
 REPO="$1"
+echo "update-root.sh `date` $REV $REPO" 1>&2
+exec >> /tmp/update.log 2>&1 
+echo "update-root.sh `date` $REV $REPO"
+svnlook -r $REV dirs-changed $REPO
 if svnlook -r $REV dirs-changed $REPO | grep '^svnadmin/hooks/' > /dev/null
 then
   echo "Updating repository control files." 1>&2
