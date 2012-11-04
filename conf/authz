@@ -33,6 +33,7 @@
 
 # $FreeBSD$
 
+# XXX We commit via ssh, not authz authentication. In theory this is irrelevant.
 [groups]
 # keep this sorted, and in sync with ncvs/CVSROOT/avail
 #committers = peter
