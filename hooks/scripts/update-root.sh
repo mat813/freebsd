@@ -1,6 +1,6 @@
 #! /bin/sh
 # $FreeBSD$
-# check out/update SVN control files if needed
+# check out/update SVN control files if needed XX
 REV="$2"
 REPO="$1"
 echo "update-root.sh `date` $REV $REPO" 1>&2
