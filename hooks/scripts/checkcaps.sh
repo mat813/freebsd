@@ -8,6 +8,7 @@ IFS=":"
 set $CAPS
 IFS="$OIFS"
 
+# atomic-revprops = 1.7+ client with improved mergeinfo handling
 found=0
 for i in $*
 do
