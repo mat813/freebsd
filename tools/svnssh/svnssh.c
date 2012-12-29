@@ -65,20 +65,6 @@ usage(void)
 	exit(1);
 }
 
-static void
-shell(char *argv[], int interactive)
-{
-	const char *sh = "/bin/tcsh";
-
-	if (interactive)
-		printf("Shell access granted - but you've got %s\n\n", sh);
-	setuid(getuid());
-	syslog(LOG_INFO, "shell access granted: %s", username);
-	execv(sh, argv);
-	msg("could not exec %s", sh);
-	exit(1);
-}
-
 static int
 karmacheck(FILE *fp, const char *name)
 {
@@ -131,15 +117,11 @@ int
 main(int argc, char *argv[])
 {
 	struct passwd *pw;
-	struct group *gr;
 	struct stat st;
 	struct rlimit rl;
 	FILE *fp;
-	int i;
 	gid_t repogid;
-	gid_t mygroups[NGROUPS_MAX];
-	int ngroups;
-	int karma, shellkarma;
+	int karma;
 
 	umask(002);
 	openlog("svnssh", LOG_PID | LOG_NDELAY, LOG_AUTH);
@@ -157,18 +139,7 @@ main(int argc, char *argv[])
 	strlcpy(username, pw->pw_name, sizeof(username));
 	endpwent();
 
-	shellkarma = 0;
-	ngroups = getgroups(NGROUPS_MAX, mygroups);
-	if (ngroups > 0) {
-		gr = getgrnam("shell");
-		if (gr != NULL)
-			for (i = 0; i < ngroups; i++)
-				if (mygroups[i] == (gid_t)gr->gr_gid)
-					shellkarma = 1;
-	}
 	if (argv[0][0] == '-' || argc == 1) {
-		if (shellkarma)
-			shell(argv, 1);
 		syslog(LOG_INFO, "shell access denied: %s", username);
 		msg("Sorry, no login shells on this machine.");
 		usage();
@@ -178,16 +149,8 @@ main(int argc, char *argv[])
 	    strcmp("svnssh",  argv[0]) != 0 ||
 	    strcmp("-c",         argv[1]) != 0 ||
 	    strcmp("svnserve -t", argv[2]) != 0) {
-		if (shellkarma)		/* Allow any command */
-			shell(argv, 0);
 		syslog(LOG_INFO, "invalid args for svn server: %s, argc=%d", username, argc);
 		msg("Invalid arguments for svnserve");
-		fprintf(stderr, "You sent: argc=%d", argc);
-		for (i = 0; i < argc; i++) {
-			fprintf(stderr, " '%s'", argv[i]);
-			syslog(LOG_INFO, "argv[%d] = %s", i, argv[i]);
-		}
-		fprintf(stderr, "\n");
 		usage();
 	}
 
