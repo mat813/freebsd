@@ -16,7 +16,7 @@ Instructions for updating unvis(1):
 	svn commit -m "Vendor import of NetBSD's unvis(1) at `date +%F`" dist
 	svn cp -m "Tag `date +%F` import of NetBSD's unvis(1)" \
 	    $REPO/base/vendor/NetBSD/unvis/dist \
-	    $REPO/base/vendor/NetBSD/unvis/`date +%Y%d%m`
+	    $REPO/base/vendor/NetBSD/unvis/`date +%Y%m%d`
 
 4) Update the files in src/contrib/unvis:
 
