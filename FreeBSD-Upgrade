@@ -16,7 +16,7 @@ Instructions for updating vis(1):
 	svn commit -m "Vendor import of NetBSD's vis(1) at `date +%F`" dist
 	svn cp -m "Tag `date +%F` import of NetBSD's vis(1)" \
 	    $REPO/base/vendor/NetBSD/vis/dist \
-	    $REPO/base/vendor/NetBSD/vis/`date +%Y%d%m`
+	    $REPO/base/vendor/NetBSD/vis/`date +%Y%m%d`
 
 4) Update the files in src/contrib/vis:
 
