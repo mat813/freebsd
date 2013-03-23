@@ -6,7 +6,7 @@
 # Mainline of the tree
 ^head/
 
-# The actively exported -stable branches.
+# The currently existing -stable branches.
 ^stable/2.0.5/
 ^stable/2.1/
 ^stable/2.2/
