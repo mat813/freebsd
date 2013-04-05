@@ -51,6 +51,7 @@ def fix_log_message(log_message):
     if line == "Obtained from:": continue
     if line == "MFC after:": continue
     if line == "Security:": continue
+    if line == "Sponsored by:": continue
     s = s + line + "\n"
   s = s.rstrip() + "\n"
   return s
