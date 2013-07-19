@@ -1,4 +1,4 @@
-/*	$FreeBSD$	*/
+/*	$FreeBSD: vendor-sys/ipfilter/4-1-8/sys/contrib/ipfilter/netinet/ip_ftp_pxy.c 145516 2005-04-25 18:15:41Z darrenr $	*/
 
 /*
  * Copyright (C) 1997-2003 by Darren Reed

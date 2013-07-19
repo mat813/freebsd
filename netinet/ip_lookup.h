@@ -1,4 +1,4 @@
-/*	$FreeBSD$	*/
+/*	$FreeBSD: vendor-sys/ipfilter/4-1-8/sys/contrib/ipfilter/netinet/ip_lookup.h 145516 2005-04-25 18:15:41Z darrenr $	*/
 
 
 #ifndef __IP_LOOKUP_H__
