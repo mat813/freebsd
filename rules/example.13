@@ -1,4 +1,4 @@
-#	$FreeBSD$
+#	$FreeBSD: vendor/ipfilter/4.1.8/contrib/ipfilter/rules/example.13 145510 2005-04-25 17:31:50Z darrenr $
 #
 # Log all short TCP packets to qe3, with 10.3.3.3 as the intended
 # destination for the packet.
