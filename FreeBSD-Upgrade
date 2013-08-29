@@ -1,0 +1,39 @@
+NetBSD cvsweb for reviewing changes:
+  http://cvsweb.netbsd.org/bsdweb.cgi/src/lib/libexecinfo/
+
+Update steps:
+
+1) Checkout the head of the vendor branch:
+
+	REPO=svn+ssh://svn.freebsd.org/
+	svn co $REPO/base/vendor/NetBSD/libexecinfo/dist
+
+2) Update files:
+
+	rm dist/*
+	export CVSROOT=anoncvs@anoncvs.NetBSD.org:/cvsroot
+	cvs export -r HEAD -d dist src/lib/libexecinfo/backtrace.3
+	cvs export -r HEAD -d dist src/lib/libexecinfo/backtrace.c
+	cvs export -r HEAD -d dist src/lib/libexecinfo/builtin.c
+	cvs export -r HEAD -d dist src/lib/libexecinfo/execinfo.h
+	cvs export -r HEAD -d dist src/lib/libexecinfo/symtab.c
+	cvs export -r HEAD -d dist src/lib/libexecinfo/symtab.h
+	cvs export -r HEAD -d dist src/lib/libexecinfo/unwind.c
+	cvs export -r HEAD -d dist src/lib/libexecinfo/unwind.h
+	cvs export -r HEAD -d dist src/lib/libexecinfo/unwind_arm_ehabi_stub.c
+
+3) Commit the new versions:
+
+	svn commit -m "Vendor import of NetBSD's libexecinfo at `date +%F`" dist
+	svn cp -m "Tag `date +%F` import of NetBSD's libexecinfo" \
+	    $REPO/base/vendor/NetBSD/libexecinfo/dist \
+	    $REPO/base/vendor/NetBSD/libexecinfo/`date +%Y%m%d`
+
+4) Merge to head:
+
+	cd /path/to/head/checkout
+	cd contrib/libexecinfo
+	svn merge --accept=postpone $REPO/base/vendor/NetBSD/libexecinfo/dist .
+	svn diff --no-diff-deleted \
+	    --old=$REPO/base/vendor/NetBSD/libexecinfo/dist --new=.
+
