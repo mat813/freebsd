@@ -17,6 +17,7 @@
 # $FreeBSD$
 #
 ^head/				re
+^stable/10/			re
 #^stable/9/			re
 #^stable/8/			re
 #^stable/7/			re
@@ -35,4 +36,6 @@
 ^head/sys/dev/random		(security-officer|so|secteam|core)
 ^head/sys/libkern/arc4random.c	(security-officer|so|secteam|core)
 ^stable/[7-9]/sys/dev/random	(security-officer|so|secteam|core)
+#^stable/([7-9]|10)/sys/dev/random	(security-officer|so|secteam|core)
 ^stable/[7-9]/sys/libkern/arc4random.c	(security-officer|so|secteam|core)
+#^stable/([7-9]|10)/sys/libkern/arc4random.c	(security-officer|so|secteam|core)
