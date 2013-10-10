@@ -19,7 +19,7 @@
 ^stable/9/
 ^stable/10/
 
-# Feature branches.  Not open until we're certain we're not reverting to cvs.
+# Feature branches.
 ^user/
 ^projects/
 
