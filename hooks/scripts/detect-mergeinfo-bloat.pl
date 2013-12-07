@@ -41,7 +41,7 @@ use feature qw(switch);		# be 5.10 or later, or else!
 # Configuration section.
 
 # Svnlook path.
-my $svnlook = "/usr/bin/svnlook";
+my $svnlook = "/usr/local/bin/svnlook";
 
 # Since the path to svnlook depends upon the local installation
 # preferences, check that the required program exists to insure that
