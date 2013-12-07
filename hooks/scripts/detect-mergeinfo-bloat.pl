@@ -40,28 +40,6 @@ use feature qw(switch);		# be 5.10 or later, or else!
 ######################################################################
 # Configuration section.
 
-# Svnlook path.
-my $svnlook = "/usr/local/bin/svnlook";
-
-# Since the path to svnlook depends upon the local installation
-# preferences, check that the required program exists to insure that
-# the administrator has set up the script properly.
-{
-  my $ok = 1;
-  foreach my $program ($svnlook) {
-    if (-e $program) {
-      unless (-x $program) {
-	warn "$0: required program `$program' is not executable, edit $0.\n";
-              $ok = 0;
-      }
-    } else {
-	warn "$0: required program `$program' does not exist, edit $0.\n";
-	$ok = 0;
-    }
-  }
-  exit 1 unless $ok;
-}
-
 ######################################################################
 # Initial setup/command-line handling.
 
@@ -101,7 +79,7 @@ chdir($tmp_dir)
 my $state = 0;
 my $path;
 my @errors;
-foreach my $line (&read_from_process($svnlook, 'diff', $repos, $mode, $txn)) {
+foreach my $line (&read_from_process('svnlook', 'diff', $repos, $mode, $txn)) {
   #printf "line: %s, current state %d\n", $line, $state;
   if ($state == 0 && $line =~ /^Property changes on: (.*)$/) {
     $path = $1;
