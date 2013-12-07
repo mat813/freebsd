@@ -65,9 +65,10 @@ my $svnlook = "/usr/bin/svnlook";
 ######################################################################
 # Initial setup/command-line handling.
 
-&usage unless @ARGV == 2;
+&usage unless @ARGV == 3;
 
 my $repos        = shift;
+my $mode         = shift;
 my $txn          = shift;
 
 unless (-e $repos) {
@@ -100,12 +101,12 @@ chdir($tmp_dir)
 my $state = 0;
 my $path;
 my @errors;
-foreach my $line (&read_from_process($svnlook, 'diff', $repos, '-r', $txn)) {
+foreach my $line (&read_from_process($svnlook, 'diff', $repos, $mode, $txn)) {
   #printf "line: %s, current state %d\n", $line, $state;
   if ($state == 0 && $line =~ /^Property changes on: (.*)$/) {
     $path = $1;
     given ($path) {
-      when (/stable\/([0-9]+)/) { if ($1 >= 10) { $state = 1; } else { $state = 0; } }
+      when (/stable\/([0-9]+)\//) { if ($1 >= 10) { $state = 1; } else { $state = 0; } }
       default { $state = 0; }
     }
     #printf "path: %s, state %d\n", $path, $state;
@@ -119,7 +120,7 @@ foreach my $line (&read_from_process($svnlook, 'diff', $repos, '-r', $txn)) {
   if ($state == 2) {
     given ($line) {
       when (/^Added: svn:mergeinfo/) {
-	push @errors, "$path : svn:merginfo added at somewhere other than root";
+	push @errors, "$path : svn:merginfo ADDED";
       }
       when (/^================/) { $state = 0; }
     }
@@ -131,9 +132,16 @@ foreach my $line (&read_from_process($svnlook, 'diff', $repos, '-r', $txn)) {
 # and will not see this verbose message more than once.
 if (@errors) {
     warn "$0:\n\n", join("\n", @errors), "\n\n", <<EOS;
-    svn merge should be done at the root directory to prevent
-    spread of stray mergeinfo records.  This commit adds new
-    mergeinfo.
+    If you use "svn merge" then it must be done at the top directory
+    directory to prevent spread of mergeinfo records.  Resulting
+    commits must ALSO be done from the root directory.
+
+    This applies to the stable/10 or higher branches.
+
+    This commit was aborted because it would have added NEW mergeinfo
+    records elsewhere, somehow.
+
+    merges with --ignore-ancestry or diff | patch do not require this.
 EOS
   exit 1;
 } else {
@@ -143,7 +151,7 @@ EOS
 sub usage
 {
   warn "@_\n" if @_;
-  die "usage: $0 REPOS TXN-NAME\n";
+  die "usage: $0 REPOS [-r REV] | [-t TXN-NAME]\n";
 }
 
 sub safe_read_from_pipe
