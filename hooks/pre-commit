@@ -87,6 +87,9 @@ verify.py "$REPO" -t "$TXN" || exit 1
 # check for merge debris
 detect-merge-conflicts.sh "$REPO" "$TXN" || exit 1
 
+# stomp on mergeinfo bloat
+detect-mergeinfo-bloat.pl "$REPO" -t "$TXN" || exit 1
+
 # check for upper/lowercase filename conflicts on clients
 case-insensitive.py "$REPO" "$TXN" || exit 1
 
@@ -94,17 +97,4 @@ case-insensitive.py "$REPO" "$TXN" || exit 1
 log-police.py -t "$TXN" "$REPO" || exit 1
 
 # Nothing else, go ahead.
-exit 0
-
-
-# Make sure that the log message contains some text.
-SVNLOOK=/usr/local/bin/svnlook
-$SVNLOOK log -t "$TXN" "$REPO" | \
-   grep "[a-zA-Z0-9]" > /dev/null || exit 1
-
-# Check that the author of this commit has the rights to perform
-# the commit on the files and directories being modified.
-commit-access-control.pl "$REPO" "$TXN" commit-access-control.cfg || exit 1
-
-# All checks passed, so allow the commit.
 exit 0
