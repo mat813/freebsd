@@ -98,7 +98,7 @@ foreach my $line (&read_from_process('svnlook', 'diff', $repos, $mode, $txn)) {
   if ($state == 2) {
     given ($line) {
       when (/^Added: svn:mergeinfo/) {
-	push @errors, "$path : svn:merginfo ADDED";
+	push @errors, "$path : svn:mergeinfo ADDED";
       }
       when (/^================/) { $state = 0; }
     }
