@@ -1,6 +1,8 @@
 #! /bin/sh
 # $FreeBSD$
 
+# A trivial stop-gap script to send a cross-reference for commits to bugzilla.
+
 TZ=UTC
 export TZ
 
