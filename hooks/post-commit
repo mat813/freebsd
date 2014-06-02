@@ -57,5 +57,8 @@ update-root.sh "$REPO" "$REV"
 # commit mail
 mailer.py commit "$REPO" "$REV" /s/svn/base/conf/mailer.conf
 
+# Ping bugzilla if there's a reference
+notify_bz.sh "$REPO" "$REV"
+
 #commit-email.pl "$REPO" "$REV" commit-watchers@example.org
 #log-commit.py --repository "$REPO" --revision "$REV"
