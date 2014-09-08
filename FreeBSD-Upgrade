@@ -19,8 +19,8 @@ Instructions for updating unvis(3) and vis(3).
 
 	svn commit -m "Vendor import of NetBSD's (un)vis(3) at `date +%F`" dist
 	svn cp -m "Tag `date +%F` import of NetBSD's (un)vis(3)" \
-	    $REPO/base/vendor/NetBSD/libc-vis/dist \
-	    $REPO/base/vendor/NetBSD/libc-vis/`date +%Y%m%d`
+	    ^/vendor/NetBSD/libc-vis/dist \
+	    ^/vendor/NetBSD/libc-vis/`date +%Y%m%d`
 
 4) Update the files in src/contrib/libc-pwcache:
 
