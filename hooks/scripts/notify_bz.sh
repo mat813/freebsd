@@ -14,28 +14,30 @@ if [ -z "$REV" -o -z "$REPO" -o ! -d "$REPO" ]; then
   exit 1
 fi
 
-PR="$(svnlook info "$REPO" -r "$REV" | sed -nE -e 's/^[ 	]*[pP][rR]:[ 	]*[a-zA-Z]+\/([0-9]+)/\1/p' -e 's/^[ 	]*[pP][rR]:[ 	]*([0-9]+)/\1/p')"
+PRS="$(svnlook info "$REPO" -r "$REV" | grep -e '^[[:space:]]*[pP][rR]:[[:space:]]*'|grep -Eo '([a-zA-Z]+\/)*[^[]([0-9]+)[^]]'|sed -Ee 's,[[:space:]],,g' -e 's,[a-zA-Z]+\/,,g')"
 
-if [ -z "$PR" ]; then
+if [ -z "$PRS" ]; then
   exit 0
 fi
 WHO="$(svnlook author "$REPO" -r "$REV")"
 
-(
-echo "From: commit-hook@freebsd.org"
-echo "To: notify-bz@freebsd.org"
-echo "Subject: [Bug $PR]"
-echo ""
-echo "A commit references this bug:"
-echo ""
-echo "Author: $WHO"
-echo "Date: $(date)"
-echo "New revision: $REV"
-echo "URL: http://svnweb.freebsd.org/changeset/base/$REV"
-echo ""
-echo "Log:"
-svnlook log "$REPO" -r "$REV" | sed -e 's/^/  /'
-echo ""
-echo "Changes:"
-svnlook changed "$REPO" -r "$REV" | sed -E -e 's/^[A-Z]*[ 	]+/  /'
-) | sed -e 's/^[ 	]*$//' | cat -s | /usr/sbin/sendmail -oi -f commit-hook@freebsd.org notify-bz@freebsd.org
+for pr in $PRS; do
+	(
+		echo "From: commit-hook@freebsd.org"
+		echo "To: notify-bz@freebsd.org"
+		echo "Subject: [Bug $pr]"
+		echo ""
+		echo "A commit references this bug:"
+		echo ""
+		echo "Author: $WHO"
+		echo "Date: $(date)"
+		echo "New revision: $REV"
+		echo "URL: http://svnweb.freebsd.org/changeset/ports/$REV"
+		echo ""
+		echo "Log:"
+		svnlook log "$REPO" -r "$REV" | sed -e 's/^/  /'
+		echo ""
+		echo "Changes:"
+		svnlook changed "$REPO" -r "$REV" | sed -E -e 's/^[A-Z]*[ 	]+/  /'
+	) | sed -e 's/^[ 	]*$//' | cat -s | /usr/sbin/sendmail -oi -f commit-hook@freebsd.org notify-bz@freebsd.org
+done
