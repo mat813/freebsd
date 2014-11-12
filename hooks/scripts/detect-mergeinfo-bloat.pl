@@ -110,7 +110,7 @@ foreach my $line (&read_from_process('svnlook', 'diff', $repos, $mode, $txn)) {
 # and will not see this verbose message more than once.
 if (@errors) {
     warn "$0:\n\n", join("\n", @errors), "\n\n", <<EOS;
-    If you use "svn merge" then it must be done at the top directory
+    If you use "svn merge" then it must be done at the top level
     directory to prevent spread of mergeinfo records.  Resulting
     commits must ALSO be done from the root directory.
 
