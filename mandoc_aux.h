@@ -1,6 +1,7 @@
-/*	$Id: vol.c,v 1.9 2011/03/22 14:33:05 kristaps Exp $ */
+/*	$Id: mandoc_aux.h,v 1.2 2014/04/23 21:06:41 schwarze Exp $ */
 /*
- * Copyright (c) 2009 Kristaps Dzonsons <kristaps@bsd.lv>
+ * Copyright (c) 2009, 2011 Kristaps Dzonsons <kristaps@bsd.lv>
+ * Copyright (c) 2014 Ingo Schwarze <schwarze@openbsd.org>
  *
  * Permission to use, copy, modify, and distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -14,26 +15,19 @@
  * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
+#ifndef MANDOC_AUX_H
+#define MANDOC_AUX_H
 
-#include <stdlib.h>
-#include <string.h>
-#include <time.h>
+__BEGIN_DECLS
 
-#include "mdoc.h"
-#include "mandoc.h"
-#include "libmdoc.h"
+int		  mandoc_asprintf(char **, const char *, ...);
+void		 *mandoc_calloc(size_t, size_t);
+void		 *mandoc_malloc(size_t);
+void		 *mandoc_realloc(void *, size_t);
+void		 *mandoc_reallocarray(void *, size_t, size_t);
+char		 *mandoc_strdup(const char *);
+char		 *mandoc_strndup(const char *, size_t);
 
-#define LINE(x, y) \
-	if (0 == strcmp(p, x)) return(y);
+__END_DECLS
 
-const char *
-mdoc_a2vol(const char *p)
-{
-
-#include "vol.in"
-
-	return(NULL);
-}
+#endif /*!MANDOC_AUX_H*/

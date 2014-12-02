@@ -1,4 +1,4 @@
-/*	$Id: demandoc.c,v 1.7 2012/05/31 22:27:14 schwarze Exp $ */
+/*	$Id: demandoc.c,v 1.12 2014/10/28 17:36:19 schwarze Exp $ */
 /*
  * Copyright (c) 2011 Kristaps Dzonsons <kristaps@bsd.lv>
  *
@@ -14,9 +14,9 @@
  * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
-#ifdef HAVE_CONFIG_H
 #include "config.h"
-#endif
+
+#include <sys/types.h>
 
 #include <assert.h>
 #include <ctype.h>
@@ -43,6 +43,7 @@ int
 main(int argc, char *argv[])
 {
 	struct mparse	*mp;
+	struct mchars	*mchars;
 	int		 ch, i, list;
 	extern int	 optind;
 
@@ -76,7 +77,8 @@ main(int argc, char *argv[])
 	argc -= optind;
 	argv += optind;
 
-	mp = mparse_alloc(MPARSE_AUTO, MANDOCLEVEL_FATAL, NULL, NULL, NULL);
+	mchars = mchars_alloc();
+	mp = mparse_alloc(MPARSE_SO, MANDOCLEVEL_FATAL, NULL, mchars, NULL);
 	assert(mp);
 
 	if (0 == argc)
@@ -88,6 +90,7 @@ main(int argc, char *argv[])
 	}
 
 	mparse_free(mp);
+	mchars_free(mchars);
 	return((int)MANDOCLEVEL_OK);
 }
 
@@ -110,7 +113,7 @@ pmandoc(struct mparse *mp, int fd, const char *fn, int list)
 		return;
 	}
 
-	mparse_result(mp, &mdoc, &man);
+	mparse_result(mp, &mdoc, &man, NULL);
 	line = 1;
 	col = 0;
 

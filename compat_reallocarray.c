@@ -1,6 +1,14 @@
-/*	$Id: vol.in,v 1.6 2010/06/19 20:46:28 kristaps Exp $ */
+#include "config.h"
+
+#if HAVE_REALLOCARRAY
+
+int dummy;
+
+#else
+
+/*	$OpenBSD: malloc.c,v 1.158 2014/04/23 15:07:27 tedu Exp $	*/
 /*
- * Copyright (c) 2009 Kristaps Dzonsons <kristaps@bsd.lv>
+ * Copyright (c) 2008 Otto Moerbeek <otto@drijf.net>
  *
  * Permission to use, copy, modify, and distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -14,22 +22,22 @@
  * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
+#include <sys/types.h>
+#include <errno.h>
+#include <stdint.h>
+#include <stdlib.h>
 
-/*
- * This file defines volume titles for .Dt.
- *
- * Be sure to escape strings.
- */
+#define MUL_NO_OVERFLOW (1UL << (sizeof(size_t) * 4))
 
-LINE("USD",		"User\'s Supplementary Documents")
-LINE("PS1",		"Programmer\'s Supplementary Documents")
-LINE("AMD",		"Ancestral Manual Documents")
-LINE("SMM",		"System Manager\'s Manual")
-LINE("URM",		"User\'s Reference Manual")
-LINE("PRM",		"Programmer\'s Manual")
-LINE("KM",		"Kernel Manual")
-LINE("IND",		"Manual Master Index")
-LINE("MMI",		"Manual Master Index")
-LINE("LOCAL",		"Local Manual")
-LINE("LOC",		"Local Manual")
-LINE("CON",		"Contributed Software Manual")
+void *
+reallocarray(void *optr, size_t nmemb, size_t size)
+{
+	if ((nmemb >= MUL_NO_OVERFLOW || size >= MUL_NO_OVERFLOW) &&
+	    nmemb > 0 && SIZE_MAX / nmemb < size) {
+		errno = ENOMEM;
+		return NULL;
+	}
+	return realloc(optr, size * nmemb);
+}
+
+#endif /*!HAVE_REALLOCARRAY*/
