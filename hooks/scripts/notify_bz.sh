@@ -14,7 +14,7 @@ if [ -z "$REV" -o -z "$REPO" -o ! -d "$REPO" ]; then
   exit 1
 fi
 
-PRS="$(svnlook info "$REPO" -r "$REV" | grep -e '^[[:space:]]*[pP][rR]:[[:space:]]*'|grep -Eo '([a-zA-Z]+\/)*[^[]([0-9]+)[^]]'|sed -Ee 's,[[:space:]],,g' -e 's,[a-zA-Z]+\/,,g')"
+PRS="$(svnlook info "$REPO" -r "$REV" | grep -e '^[[:space:]]*[pP][rR]:[[:space:]]*'|grep -Eo '([a-zA-Z]+\/)*[^[]([0-9]+)[^],]'|sed -Ee 's,[[:space:]],,g' -e 's,[a-zA-Z]+\/,,g')"
 
 if [ -z "$PRS" ]; then
   exit 0
