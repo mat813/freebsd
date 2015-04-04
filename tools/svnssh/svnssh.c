@@ -202,8 +202,8 @@ main(int argc, char *argv[])
 		msg("root not allowed to commit");
 		exit(1);
 	}
-	rl.rlim_cur = 540;	/* 9 minutes (soft) */
-	rl.rlim_max = 600;	/* 10 minutes (hard) */
+	rl.rlim_cur = 60 * 60;	/* 60 minutes (soft) */
+	rl.rlim_max = 70 * 60;	/* 70 minutes (hard) */
 	setrlimit(RLIMIT_CPU, &rl);
 	if (karma == 0)
 		syslog(LOG_INFO, "svn server: %s, karma %d", username, karma);
