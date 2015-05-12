@@ -4,7 +4,7 @@
 ** Parser extensions for Ficl
 ** Authors: Larry Hastings & John Sadler (john_sadler@alum.mit.edu)
 ** Created: April 2001
-** $Id: prefix.c,v 1.8 2010/09/13 18:43:04 asau Exp $
+** $Id: prefix.c,v 1.5 2001-12-04 17:58:13-08 jsadler Exp jsadler $
 *******************************************************************/
 /*
 ** Copyright (c) 1997-2001 John Sadler (john_sadler@alum.mit.edu)
@@ -12,9 +12,9 @@
 **
 ** Get the latest Ficl release at http://ficl.sourceforge.net
 **
-** I am interested in hearing from anyone who uses Ficl. If you have
+** I am interested in hearing from anyone who uses ficl. If you have
 ** a problem, a success story, a defect, an enhancement request, or
-** if you would like to contribute to the Ficl release, please
+** if you would like to contribute to the ficl release, please
 ** contact me by email at the address above.
 **
 ** L I C E N S E  and  D I S C L A I M E R
@@ -44,6 +44,7 @@
 #include <string.h>
 #include <ctype.h>
 #include "ficl.h"
+#include "math64.h"
 
 /*
 ** (jws) revisions: 
@@ -64,67 +65,85 @@ static char list_name[] = "<prefixes>";
 /**************************************************************************
                         f i c l P a r s e P r e f i x
 ** This is the parse step for prefixes - it checks an incoming word
-** to see if it starts with a prefix, and if so runs the corresponding
+** to see if it starts with a prefix, and if so runs the corrseponding
 ** code against the remainder of the word and returns true.
 **************************************************************************/
-int ficlVmParsePrefix(ficlVm *vm, ficlString s)
+int ficlParsePrefix(FICL_VM *pVM, STRINGINFO si)
 {
     int i;
-    ficlHash *hash;
-    ficlWord *word = ficlSystemLookup(vm->callback.system, list_name);
+    FICL_HASH *pHash;
+    FICL_WORD *pFW = ficlLookup(pVM->pSys, list_name);
 
     /* 
     ** Make sure we found the prefix dictionary - otherwise silently fail
     ** If forth-wordlist is not in the search order, we won't find the prefixes.
     */
-    if (!word)
-        return 0; /* false */
+    if (!pFW)
+        return FICL_FALSE;
 
-    hash = (ficlHash *)(word->param[0].p);
+    pHash = (FICL_HASH *)(pFW->param[0].p);
     /*
     ** Walk the list looking for a match with the beginning of the incoming token
     */
-    for (i = 0; i < (int)hash->size; i++)
+    for (i = 0; i < (int)pHash->size; i++)
     {
-        word = hash->table[i];
-        while (word != NULL)
+        pFW = pHash->table[i];
+        while (pFW != NULL)
         {
             int n;
-            n = word->length;
+            n = pFW->nName;
             /*
             ** If we find a match, adjust the TIB to give back the non-prefix characters
             ** and execute the prefix word.
             */
-            if (!ficlStrincmp(FICL_STRING_GET_POINTER(s), word->name, (ficlUnsigned)n))
+            if (!strincmp(SI_PTR(si), pFW->name, (FICL_UNS)n))
             {
                 /* (sadler) fixed off-by-one error when the token has no trailing space in the TIB */
-                ficlVmSetTibIndex(vm, s.text + n - vm->tib.text);
-                ficlVmExecuteWord(vm, word);
+				vmSetTibIndex(pVM, si.cp + n - pVM->tib.cp );
+                vmExecute(pVM, pFW);
 
-                return 1; /* true */
+                return FICL_TRUE;
             }
-            word = word->link;
+            pFW = pFW->link;
         }
     }
 
-    return 0; /* false */
+    return FICL_FALSE;
 }
 
 
-static void ficlPrimitiveTempBase(ficlVm *vm)
+static void tempBase(FICL_VM *pVM, int base)
 {
-    int oldbase = vm->base;
-    ficlString number = ficlVmGetWord0(vm);
-    int base = ficlStackPopInteger(vm->dataStack);
+    int oldbase = pVM->base;
+    STRINGINFO si = vmGetWord0(pVM);
 
-    vm->base = base;
-    if (!ficlVmParseNumber(vm, number)) 
-        ficlVmThrowError(vm, "%.*s not recognized", FICL_STRING_GET_LENGTH(number), FICL_STRING_GET_POINTER(number));
+    pVM->base = base;
+    if (!ficlParseNumber(pVM, si)) 
+    {
+        int i = SI_COUNT(si);
+        vmThrowErr(pVM, "%.*s not recognized", i, SI_PTR(si));
+    }
 
-    vm->base = oldbase;
+    pVM->base = oldbase;
     return;
 }
 
+static void fTempBase(FICL_VM *pVM)
+{
+    int base = stackPopINT(pVM->pStack);
+    tempBase(pVM, base);
+    return;
+}
+
+static void prefixHex(FICL_VM *pVM)
+{
+    tempBase(pVM, 16);
+}
+
+static void prefixTen(FICL_VM *pVM)
+{
+    tempBase(pVM, 10);
+}
 
 
 /**************************************************************************
@@ -134,45 +153,45 @@ static void ficlPrimitiveTempBase(ficlVm *vm)
 ** If they need to generate code in compile state you must add
 ** this code explicitly.
 **************************************************************************/
-void ficlSystemCompilePrefix(ficlSystem *system)
+void ficlCompilePrefix(FICL_SYSTEM *pSys)
 {
-    ficlDictionary *dictionary = system->dictionary;
-    ficlHash *hash;
+    FICL_DICT *dp = pSys->dp;
+    FICL_HASH *pHash;
+    FICL_HASH *pPrevCompile = dp->pCompile;
+#if (FICL_EXTENDED_PREFIX)
+    FICL_WORD *pFW;
+#endif
     
     /*
     ** Create a named wordlist for prefixes to reside in...
     ** Since we're doing a special kind of search, make it
     ** a single bucket hashtable - hashing does not help here.
     */
-    hash = ficlDictionaryCreateWordlist(dictionary, 1);
-    hash->name = list_name;
-    ficlDictionaryAppendConstantPointer(dictionary, list_name, hash);
+    pHash = dictCreateWordlist(dp, 1);
+    pHash->name = list_name;
+    dictAppendWord(dp, list_name, constantParen, FW_DEFAULT);
+    dictAppendCell(dp, LVALUEtoCELL(pHash));
+
+	/*
+	** Put __tempbase in the forth-wordlist
+	*/
+    dictAppendWord(dp, "__tempbase", fTempBase, FW_DEFAULT);
 
     /*
-    ** Put __tempbase in the forth-wordlist
+    ** Temporarily make the prefix list the compile wordlist so that
+    ** we can create some precompiled prefixes.
     */
-    ficlDictionarySetPrimitive(dictionary, "__tempbase", ficlPrimitiveTempBase, FICL_WORD_DEFAULT);
-
-    /*
-    ** If you want to add some prefixes at compilation-time, copy this line to the top of this function:
-    **
-    ficlHash *oldCompilationWordlist;
-
-    **
-    ** then copy this code to the bottom, just above the return:
-    **
-
-    oldCompilationWordlist = dictionary->compilationWordlist;
-    dictionary->compilationWordlist = hash;
-    ficlDictionarySetPrimitive(dictionary, YOUR WORD HERE, FICL_WORD_DEFAULT);
-    dictionary->compilationWordlist = oldCompilationWordlist;
-
-    **
-    ** and substitute in your own actual calls to ficlDictionarySetPrimitive() as needed.
-    **
-    ** Or--better yet--do it in your own code, so you don't have to re-modify the Ficl
-    ** source code every time we cut a new release!
-    */
+    dp->pCompile = pHash;
+    dictAppendWord(dp, "0x", prefixHex, FW_DEFAULT);
+    dictAppendWord(dp, "0d", prefixTen, FW_DEFAULT);
+#if (FICL_EXTENDED_PREFIX)
+    pFW = ficlLookup(pSys, "\\");
+    if (pFW)
+    {
+        dictAppendWord(dp, "//", pFW->code, FW_DEFAULT);
+    }
+#endif
+    dp->pCompile = pPrevCompile;
 
     return;
 }

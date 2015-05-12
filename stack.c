@@ -3,7 +3,7 @@
 ** Forth Inspired Command Language
 ** Author: John Sadler (john_sadler@alum.mit.edu)
 ** Created: 16 Oct 1997
-** $Id: stack.c,v 1.11 2010/08/12 13:57:22 asau Exp $
+** $Id: stack.c,v 1.7 2001-06-12 01:24:35-07 jsadler Exp jsadler $
 *******************************************************************/
 /*
 ** Copyright (c) 1997-2001 John Sadler (john_sadler@alum.mit.edu)
@@ -11,9 +11,9 @@
 **
 ** Get the latest Ficl release at http://ficl.sourceforge.net
 **
-** I am interested in hearing from anyone who uses Ficl. If you have
+** I am interested in hearing from anyone who uses ficl. If you have
 ** a problem, a success story, a defect, an enhancement request, or
-** if you would like to contribute to the Ficl release, please
+** if you would like to contribute to the ficl release, please
 ** contact me by email at the address above.
 **
 ** L I C E N S E  and  D I S C L A I M E R
@@ -44,75 +44,82 @@
 
 #include "ficl.h"
 
-#define STKDEPTH(s) (((s)->top - (s)->base) + 1)
+#define STKDEPTH(s) ((s)->sp - (s)->base)
 
 /*
 ** N O T E: Stack convention:
 **
-** THIS CHANGED IN FICL 4.0!
-**
-** top points to the *current* top data value
-** push: increment top, store value at top
-** pop:  fetch value at top, decrement top
+** sp points to the first available cell
+** push: store value at sp, increment sp
+** pop:  decrement sp, fetch value at sp
 ** Stack grows from low to high memory
 */
 
 /*******************************************************************
                     v m C h e c k S t a c k
 ** Check the parameter stack for underflow or overflow.
-** size controls the type of check: if size is zero,
+** nCells controls the type of check: if nCells is zero,
 ** the function checks the stack state for underflow and overflow.
-** If size > 0, checks to see that the stack has room to push
+** If nCells > 0, checks to see that the stack has room to push
 ** that many cells. If less than zero, checks to see that the
 ** stack has room to pop that many cells. If any test fails,
 ** the function throws (via vmThrow) a VM_ERREXIT exception.
 *******************************************************************/
-void ficlStackCheck(ficlStack *stack, int popCells, int pushCells)
-#if FICL_ROBUST >= 1
+void vmCheckStack(FICL_VM *pVM, int popCells, int pushCells)
 {
-    int nFree = stack->size - STKDEPTH(stack);
+    FICL_STACK *pStack = pVM->pStack;
+    int nFree = pStack->base + pStack->nCells - pStack->sp;
 
-    if (popCells > STKDEPTH(stack))
+    if (popCells > STKDEPTH(pStack))
     {
-        ficlVmThrowError(stack->vm, "Error: %s stack underflow", stack->name);
+        vmThrowErr(pVM, "Error: stack underflow");
     }
 
     if (nFree < pushCells - popCells)
     {
-        ficlVmThrowError(stack->vm, "Error: %s stack overflow", stack->name);
+        vmThrowErr(pVM, "Error: stack overflow");
     }
 
     return;
 }
-#else /* FICL_ROBUST >= 1 */
+
+#if FICL_WANT_FLOAT
+void vmCheckFStack(FICL_VM *pVM, int popCells, int pushCells)
 {
-	FICL_IGNORE(stack);
-	FICL_IGNORE(popCells);
-	FICL_IGNORE(pushCells);
+    FICL_STACK *fStack = pVM->fStack;
+    int nFree = fStack->base + fStack->nCells - fStack->sp;
+
+    if (popCells > STKDEPTH(fStack))
+    {
+        vmThrowErr(pVM, "Error: float stack underflow");
+    }
+
+    if (nFree < pushCells - popCells)
+    {
+        vmThrowErr(pVM, "Error: float stack overflow");
+    }
 }
-#endif /* FICL_ROBUST >= 1 */
+#endif
 
 /*******************************************************************
                     s t a c k C r e a t e
 ** 
 *******************************************************************/
 
-ficlStack *ficlStackCreate(ficlVm *vm, char *name, unsigned size)
+FICL_STACK *stackCreate(unsigned nCells)
 {
-    size_t totalSize = sizeof (ficlStack) + (size * sizeof (ficlCell));
-    ficlStack *stack = ficlMalloc(totalSize);
+    size_t size = sizeof (FICL_STACK) + nCells * sizeof (CELL);
+    FICL_STACK *pStack = ficlMalloc(size);
 
-    FICL_VM_ASSERT(vm, size != 0);
-    FICL_VM_ASSERT(vm, stack != NULL);
+#if FICL_ROBUST
+    assert (nCells != 0);
+    assert (pStack != NULL);
+#endif
 
-    stack->size = size;
-    stack->frame = NULL;
-
-	stack->vm = vm;
-	stack->name = name;
-
-	ficlStackReset(stack);
-    return stack;
+    pStack->nCells = nCells;
+    pStack->sp     = pStack->base;
+    pStack->pFrame = NULL;
+    return pStack;
 }
 
 
@@ -121,10 +128,10 @@ ficlStack *ficlStackCreate(ficlVm *vm, char *name, unsigned size)
 ** 
 *******************************************************************/
 
-void ficlStackDestroy(ficlStack *stack)
+void stackDelete(FICL_STACK *pStack)
 {
-    if (stack)
-        ficlFree(stack);
+    if (pStack)
+        ficlFree(pStack);
     return;
 }
 
@@ -134,9 +141,9 @@ void ficlStackDestroy(ficlStack *stack)
 ** 
 *******************************************************************/
 
-int ficlStackDepth(ficlStack *stack)
+int stackDepth(FICL_STACK *pStack)
 {
-    return STKDEPTH(stack);
+    return STKDEPTH(pStack);
 }
 
 /*******************************************************************
@@ -144,10 +151,12 @@ int ficlStackDepth(ficlStack *stack)
 ** 
 *******************************************************************/
 
-void ficlStackDrop(ficlStack *stack, int n)
+void stackDrop(FICL_STACK *pStack, int n)
 {
-    FICL_VM_ASSERT(stack->vm, n > 0);
-    stack->top -= n;
+#if FICL_ROBUST
+    assert(n > 0);
+#endif
+    pStack->sp -= n;
     return;
 }
 
@@ -157,14 +166,14 @@ void ficlStackDrop(ficlStack *stack, int n)
 ** 
 *******************************************************************/
 
-ficlCell ficlStackFetch(ficlStack *stack, int n)
+CELL stackFetch(FICL_STACK *pStack, int n)
 {
-    return stack->top[-n];
+    return pStack->sp[-n-1];
 }
 
-void ficlStackStore(ficlStack *stack, int n, ficlCell c)
+void stackStore(FICL_STACK *pStack, int n, CELL c)
 {
-    stack->top[-n] = c;
+    pStack->sp[-n-1] = c;
     return;
 }
 
@@ -174,27 +183,26 @@ void ficlStackStore(ficlStack *stack, int n, ficlCell c)
 ** 
 *******************************************************************/
 
-ficlCell ficlStackGetTop(ficlStack *stack)
+CELL stackGetTop(FICL_STACK *pStack)
 {
-    return stack->top[0];
+    return pStack->sp[-1];
 }
 
-#if FICL_WANT_LOCALS
 
 /*******************************************************************
                     s t a c k L i n k
 ** Link a frame using the stack's frame pointer. Allot space for
-** size cells in the frame
-** 1) Push frame
-** 2) frame = top
-** 3) top += size
+** nCells cells in the frame
+** 1) Push pFrame
+** 2) pFrame = sp
+** 3) sp += nCells
 *******************************************************************/
 
-void ficlStackLink(ficlStack *stack, int size)
+void stackLink(FICL_STACK *pStack, int nCells)
 {
-    ficlStackPushPointer(stack, stack->frame);
-    stack->frame = stack->top + 1;
-    stack->top += size;
+    stackPushPtr(pStack, pStack->pFrame);
+    pStack->pFrame = pStack->sp;
+    pStack->sp += nCells;
     return;
 }
 
@@ -202,17 +210,16 @@ void ficlStackLink(ficlStack *stack, int size)
 /*******************************************************************
                     s t a c k U n l i n k
 ** Unink a stack frame previously created by stackLink
-** 1) top = frame
-** 2) frame = pop()
+** 1) sp = pFrame
+** 2) pFrame = pop()
 *******************************************************************/
 
-void ficlStackUnlink(ficlStack *stack)
+void stackUnlink(FICL_STACK *pStack)
 {
-    stack->top = stack->frame - 1;
-    stack->frame = ficlStackPopPointer(stack);
+    pStack->sp = pStack->pFrame;
+    pStack->pFrame = stackPopPtr(pStack);
     return;
 }
-#endif /* FICL_WANT_LOCALS */
 
 
 /*******************************************************************
@@ -220,9 +227,9 @@ void ficlStackUnlink(ficlStack *stack)
 ** 
 *******************************************************************/
 
-void ficlStackPick(ficlStack *stack, int n)
+void stackPick(FICL_STACK *pStack, int n)
 {
-    ficlStackPush(stack, ficlStackFetch(stack, n));
+    stackPush(pStack, stackFetch(pStack, n));
     return;
 }
 
@@ -232,107 +239,73 @@ void ficlStackPick(ficlStack *stack, int n)
 ** 
 *******************************************************************/
 
-ficlCell ficlStackPop(ficlStack *stack)
+CELL stackPop(FICL_STACK *pStack)
 {
-    return *stack->top--;
+    return *--pStack->sp;
 }
 
-void *ficlStackPopPointer(ficlStack *stack)
+void *stackPopPtr(FICL_STACK *pStack)
 {
-    return (*stack->top--).p;
+    return (*--pStack->sp).p;
 }
 
-ficlUnsigned ficlStackPopUnsigned(ficlStack *stack)
+FICL_UNS stackPopUNS(FICL_STACK *pStack)
 {
-    return (*stack->top--).u;
+    return (*--pStack->sp).u;
 }
 
-ficlInteger ficlStackPopInteger(ficlStack *stack)
+FICL_INT stackPopINT(FICL_STACK *pStack)
 {
-    return (*stack->top--).i;
+    return (*--pStack->sp).i;
 }
-
-ficl2Integer ficlStackPop2Integer(ficlStack *stack)
-{
-    ficl2Integer ret;
-    ficlInteger high = ficlStackPopInteger(stack);
-    ficlInteger low = ficlStackPopInteger(stack);
-	FICL_2INTEGER_SET(high, low, ret);
-    return ret;
-}
-
-ficl2Unsigned ficlStackPop2Unsigned(ficlStack *stack)
-{
-    ficl2Unsigned ret;
-    ficlUnsigned high = ficlStackPopUnsigned(stack);
-    ficlUnsigned low = ficlStackPopUnsigned(stack);
-	FICL_2UNSIGNED_SET(high, low, ret);
-    return ret;
-}
-
 
 #if (FICL_WANT_FLOAT)
-ficlFloat ficlStackPopFloat(ficlStack *stack)
+float stackPopFloat(FICL_STACK *pStack)
 {
-    return (*stack->top--).f;
+    return (*(--pStack->sp)).f;
 }
 #endif
-
 
 /*******************************************************************
                     s t a c k P u s h
 ** 
 *******************************************************************/
 
-void ficlStackPush(ficlStack *stack, ficlCell c)
+void stackPush(FICL_STACK *pStack, CELL c)
 {
-    *++stack->top = c;
+    *pStack->sp++ = c;
 }
 
-void ficlStackPushPointer(ficlStack *stack, void *ptr)
+void stackPushPtr(FICL_STACK *pStack, void *ptr)
 {
-    *++stack->top = FICL_LVALUE_TO_CELL(ptr);
+    *pStack->sp++ = LVALUEtoCELL(ptr);
 }
 
-void ficlStackPushInteger(ficlStack *stack, ficlInteger i)
+void stackPushUNS(FICL_STACK *pStack, FICL_UNS u)
 {
-    *++stack->top = FICL_LVALUE_TO_CELL(i);
+    *pStack->sp++ = LVALUEtoCELL(u);
 }
 
-void ficlStackPushUnsigned(ficlStack *stack, ficlUnsigned u)
+void stackPushINT(FICL_STACK *pStack, FICL_INT i)
 {
-    *++stack->top = FICL_LVALUE_TO_CELL(u);
-}
-
-void  ficlStackPush2Unsigned(ficlStack *stack, ficl2Unsigned du)
-{
-    ficlStackPushUnsigned(stack, FICL_2UNSIGNED_GET_LOW(du));
-    ficlStackPushUnsigned(stack, FICL_2UNSIGNED_GET_HIGH(du));
-    return;
-}
-
-void  ficlStackPush2Integer(ficlStack *stack, ficl2Integer di)
-{
-	ficlStackPush2Unsigned(stack, FICL_2INTEGER_TO_2UNSIGNED(di));
-    return;
+    *pStack->sp++ = LVALUEtoCELL(i);
 }
 
 #if (FICL_WANT_FLOAT)
-void ficlStackPushFloat(ficlStack *stack, ficlFloat f)
+void stackPushFloat(FICL_STACK *pStack, FICL_FLOAT f)
 {
-    *++stack->top = FICL_LVALUE_TO_CELL(f);
+    *pStack->sp++ = LVALUEtoCELL(f);
 }
 #endif
-
 
 /*******************************************************************
                     s t a c k R e s e t
 ** 
 *******************************************************************/
 
-void ficlStackReset(ficlStack *stack)
+void stackReset(FICL_STACK *pStack)
 {
-    stack->top = stack->base - 1;
+    pStack->sp = pStack->base;
     return;
 }
 
@@ -345,36 +318,36 @@ void ficlStackReset(ficlStack *stack)
 ** upward as needed to fill the hole.
 *******************************************************************/
 
-void ficlStackRoll(ficlStack *stack, int n)
+void stackRoll(FICL_STACK *pStack, int n)
 {
-    ficlCell c;
-    ficlCell *cell;
+    CELL c;
+    CELL *pCell;
 
     if (n == 0)
         return;
     else if (n > 0)
     {
-        cell = stack->top - n;
-        c = *cell;
+        pCell = pStack->sp - n - 1;
+        c = *pCell;
 
-        for (;n > 0; --n, cell++)
+        for (;n > 0; --n, pCell++)
         {
-            *cell = cell[1];
+            *pCell = pCell[1];
         }
 
-        *cell = c;
+        *pCell = c;
     }
     else
     {
-        cell = stack->top;
-        c = *cell;
+        pCell = pStack->sp - 1;
+        c = *pCell;
 
-        for (; n < 0; ++n, cell--)
+        for (; n < 0; ++n, pCell--)
         {
-            *cell = cell[-1];
+            *pCell = pCell[-1];
         }
 
-        *cell = c;
+        *pCell = c;
     }
     return;
 }
@@ -385,31 +358,9 @@ void ficlStackRoll(ficlStack *stack, int n)
 ** 
 *******************************************************************/
 
-void ficlStackSetTop(ficlStack *stack, ficlCell c)
+void stackSetTop(FICL_STACK *pStack, CELL c)
 {
-    FICL_STACK_CHECK(stack, 1, 1);
-    stack->top[0] = c;
-    return;
-}
-
-
-
-
-void ficlStackWalk(ficlStack *stack, ficlStackWalkFunction callback, void *context, ficlInteger bottomToTop)
-{
-    int i;
-    int depth;
-	ficlCell *cell;
-    FICL_STACK_CHECK(stack, 0, 0);
-
-	depth = ficlStackDepth(stack);
-	cell = bottomToTop ? stack->base : stack->top;
-    for (i = 0; i < depth; i++)
-    {
-        if (callback(context, cell) == FICL_FALSE)
-			break;
-        cell += bottomToTop ? 1 : -1;
-    }
+    pStack->sp[-1] = c;
     return;
 }
 
