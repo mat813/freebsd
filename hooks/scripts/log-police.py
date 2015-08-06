@@ -64,8 +64,14 @@ def fix_txn(fs, txn_name):
   log_message = svn.fs.svn_fs_txn_prop(txn, "svn:log")
   if log_message is not None:
     new_message = fix_log_message(log_message)
+    if new_message.strip() == "":
+      sys.stderr.write("Log message required\n")
+      sys.exit(1)
     if new_message != log_message:
       svn.fs.svn_fs_change_txn_prop(txn, "svn:log", new_message)
+  else:
+    sys.stderr.write("Log message required\n")
+    sys.exit(1)
 
 
 def fix_rev(fs, revnum):
