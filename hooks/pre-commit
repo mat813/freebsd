@@ -93,6 +93,9 @@ detect-mergeinfo-bloat.pl "$REPO" -t "$TXN" || exit 1
 # check for upper/lowercase filename conflicts on clients
 case-insensitive.py "$REPO" "$TXN" || exit 1
 
+# catch some gross violations of commit template mangling.
+stomp_bad_formatting.pl "$REPO" "$TXN" || exit 1
+
 # fix log message.  
 log-police.py -t "$TXN" "$REPO" || exit 1
 
