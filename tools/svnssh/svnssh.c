@@ -205,7 +205,7 @@ main(int argc, char *argv[])
 	rl.rlim_cur = 60 * 60;	/* 60 minutes (soft) */
 	rl.rlim_max = 70 * 60;	/* 70 minutes (hard) */
 	setrlimit(RLIMIT_CPU, &rl);
-	alarm(120);		/* Limit total run time */
+	alarm(120 * 60);	/* Limit total run time to 120 minutes */
 	if (karma == 0)
 		syslog(LOG_INFO, "svn server: %s, karma %d", username, karma);
 	closelog();
