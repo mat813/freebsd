@@ -33,6 +33,9 @@
 require warnings;
 import warnings;
 
+use v5.10; # earliest occurance of feature
+no warnings 'experimental::smartmatch';
+
 use strict;
 use Carp;
 use feature qw(switch);		# be 5.10 or later, or else!
