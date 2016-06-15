@@ -46,13 +46,18 @@ def fix_log_message(log_message):
     # should check last paragraph for known headers.
     if line == "PR:": continue
     if line == "Submitted by:": continue
+    if line == "Reported by:": continue
     if line == "Reviewed by:": continue
     if line == "Approved by:": continue
     if line == "Obtained from:": continue
     if line == "MFC after:": continue
+    if line == "MFH:": continue
     if line == "Relnotes:": continue
     if line == "Security:": continue
+    if line == "Changes:": continue
+    if line == "With hat:": continue
     if line == "Sponsored by:": continue
+    if line == "Differential Revision:": continue
     s = s + line + "\n"
   s = s.rstrip() + "\n"
   return s
