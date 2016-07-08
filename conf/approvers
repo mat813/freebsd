@@ -16,7 +16,7 @@
 #
 # $FreeBSD$
 #
-^head/				re
+#^head/				re
 ^stable/11/			re
 #^stable/10/			re
 ^release/			re
