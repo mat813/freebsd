@@ -18,6 +18,7 @@
 ^stable/8/
 ^stable/9/
 ^stable/10/
+^stable/11/
 
 # Feature branches.
 ^user/
