@@ -1,5 +1,5 @@
 %{
-/*	$OpenBSD: date.y,v 1.12 2013/12/03 00:21:49 deraadt Exp $	*/
+/*	$OpenBSD: date.y,v 1.14 2016/08/26 09:02:54 guenther Exp $	*/
 
 /*
 **  Originally written by Steven M. Bellovin <smb@research.att.com> while
@@ -17,6 +17,7 @@
 #include <ctype.h>
 #include <err.h>
 #include <string.h>
+#include <time.h>
 
 #include "rcsprog.h"
 
@@ -494,7 +495,7 @@ yyerror(const char *s)
 		    s, yyInput);
 
 	warnx("%s", str);
-	xfree(str);
+	free(str);
 	return (0);
 }
 

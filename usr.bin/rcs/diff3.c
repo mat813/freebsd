@@ -1,4 +1,4 @@
-/*	$OpenBSD: diff3.c,v 1.35 2015/01/16 06:40:11 deraadt Exp $	*/
+/*	$OpenBSD: diff3.c,v 1.39 2016/08/26 09:02:54 guenther Exp $	*/
 
 /*
  * Copyright (C) Caldera International Inc.  2001-2002.
@@ -69,6 +69,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 #include <unistd.h>
 
 #include "diff.h"
@@ -234,14 +235,10 @@ merge_diff3(char **av, int flags)
 		warnx("warning: overlaps or other problems during merge");
 
 out:
-	if (b2 != NULL)
-		buf_free(b2);
-	if (b3 != NULL)
-		buf_free(b3);
-	if (d1 != NULL)
-		buf_free(d1);
-	if (d2 != NULL)
-		buf_free(d2);
+	buf_free(b2);
+	buf_free(b3);
+	buf_free(d1);
+	buf_free(d2);
 
 	(void)unlink(path1);
 	(void)unlink(path2);
@@ -249,20 +246,13 @@ out:
 	(void)unlink(dp13);
 	(void)unlink(dp23);
 
-	if (path1 != NULL)
-		xfree(path1);
-	if (path2 != NULL)
-		xfree(path2);
-	if (path3 != NULL)
-		xfree(path3);
-	if (dp13 != NULL)
-		xfree(dp13);
-	if (dp23 != NULL)
-		xfree(dp23);
-	if (data != NULL)
-		xfree(data);
-	if (patch != NULL)
-		xfree(patch);
+	free(path1);
+	free(path2);
+	free(path3);
+	free(dp13);
+	free(dp23);
+	free(data);
+	free(patch);
 
 	return (diffb);
 }
@@ -361,14 +351,10 @@ rcs_diff3(RCSFILE *rf, char *workfile, RCSNUM *rev1, RCSNUM *rev2, int flags)
 		warnx("warning: overlaps or other problems during merge");
 
 out:
-	if (b2 != NULL)
-		buf_free(b2);
-	if (b3 != NULL)
-		buf_free(b3);
-	if (d1 != NULL)
-		buf_free(d1);
-	if (d2 != NULL)
-		buf_free(d2);
+	buf_free(b2);
+	buf_free(b3);
+	buf_free(d1);
+	buf_free(d2);
 
 	(void)unlink(path1);
 	(void)unlink(path2);
@@ -376,20 +362,13 @@ out:
 	(void)unlink(dp13);
 	(void)unlink(dp23);
 
-	if (path1 != NULL)
-		xfree(path1);
-	if (path2 != NULL)
-		xfree(path2);
-	if (path3 != NULL)
-		xfree(path3);
-	if (dp13 != NULL)
-		xfree(dp13);
-	if (dp23 != NULL)
-		xfree(dp23);
-	if (data != NULL)
-		xfree(data);
-	if (patch != NULL)
-		xfree(patch);
+	free(path1);
+	free(path2);
+	free(path3);
+	free(dp13);
+	free(dp23);
+	free(data);
+	free(patch);
 
 	return (diffb);
 }
@@ -657,7 +636,7 @@ merge(size_t m1, size_t m2)
 	d1 = d13;
 	d2 = d23;
 	j = 0;
-	while ((t1 = d1 < d13 + m1) | (t2 = d2 < d23 + m2)) {
+	while ((t1 = (d1 < d13 + m1)) | (t2 = (d2 < d23 + m2))) {
 		if (debug) {
 			printf("%d,%d=%d,%d %d,%d=%d,%d\n",
 			d1->old.from, d1->old.to,

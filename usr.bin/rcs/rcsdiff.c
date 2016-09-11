@@ -1,4 +1,4 @@
-/*	$OpenBSD: rcsdiff.c,v 1.82 2015/01/16 06:40:11 deraadt Exp $	*/
+/*	$OpenBSD: rcsdiff.c,v 1.84 2015/11/02 16:45:21 nicm Exp $	*/
 /*
  * Copyright (c) 2005 Joris Vink <joris@openbsd.org>
  * All rights reserved.
@@ -250,15 +250,9 @@ rcsdiff_main(int argc, char **argv)
 			status = rcsdiff_rev(file, rev1, rev2, dflags);
 
 		rcs_close(file);
-
-		if (rev1 != NULL) {
-			rcsnum_free(rev1);
-			rev1 = NULL;
-		}
-		if (rev2 != NULL) {
-			rcsnum_free(rev2);
-			rev2 = NULL;
-		}
+		rcsnum_free(rev1);
+		rcsnum_free(rev2);
+		rev1 = rev2 = NULL;
 	}
 
 	return (status);
@@ -354,14 +348,10 @@ rcsdiff_file(RCSFILE *file, RCSNUM *rev, const char *filename, int dflags)
 out:
 	if (fd != -1)
 		(void)close(fd);
-	if (b1 != NULL)
-		buf_free(b1);
-	if (b2 != NULL)
-		buf_free(b2);
-	if (path1 != NULL)
-		xfree(path1);
-	if (path2 != NULL)
-		xfree(path2);
+	buf_free(b1);
+	buf_free(b2);
+	free(path1);
+	free(path2);
 
 	return (ret);
 }
@@ -433,14 +423,10 @@ rcsdiff_rev(RCSFILE *file, RCSNUM *rev1, RCSNUM *rev2, int dflags)
 	ret = diffreg(path1, path2, NULL, dflags);
 
 out:
-	if (b1 != NULL)
-		buf_free(b1);
-	if (b2 != NULL)
-		buf_free(b2);
-	if (path1 != NULL)
-		xfree(path1);
-	if (path2 != NULL)
-		xfree(path2);
+	buf_free(b1);
+	buf_free(b2);
+	free(path1);
+	free(path2);
 
 	return (ret);
 }

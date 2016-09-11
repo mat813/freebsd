@@ -1,4 +1,4 @@
-/*	$OpenBSD: co.c,v 1.120 2015/01/16 06:40:11 deraadt Exp $	*/
+/*	$OpenBSD: co.c,v 1.122 2015/10/21 16:06:57 millert Exp $	*/
 /*
  * Copyright (c) 2005 Joris Vink <joris@openbsd.org>
  * All rights reserved.
@@ -515,7 +515,7 @@ checkout_err_nobranch(RCSFILE *file, const char *author, const char *date,
 	    file->rf_path,
 	    date ? " a date before " : "",
 	    date ? date : "",
-	    author ? " and author " + (date ? 0:4 ) : "",
+	    author ? " and author " + (date ? 0:4) : "",
 	    author ? author : "",
 	    state  ? " and state " + (date || author ? 0:4) : "",
 	    state  ? state : "");
@@ -554,7 +554,7 @@ checkout_file_has_diffs(RCSFILE *rfp, RCSNUM *frev, const char *dst)
 
 	buf_free(bp);
 	unlink(tempfile);
-	xfree(tempfile);
+	free(tempfile);
 
 	return (ret);
 }
