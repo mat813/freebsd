@@ -1,4 +1,4 @@
-/*	$OpenBSD: rcsprog.c,v 1.161 2016/07/04 01:39:12 millert Exp $	*/
+/*	$OpenBSD: rcsprog.c,v 1.155 2015/01/16 06:40:11 deraadt Exp $	*/
 /*
  * Copyright (c) 2005 Jean-Francois Brousseau <jfb@openbsd.org>
  * All rights reserved.
@@ -35,7 +35,7 @@
 
 #include "rcsprog.h"
 
-#define RCSPROG_OPTSTRING	"A:a:b::c:e::Iik:Ll::m:Mn:N:o:qt::TUu::Vx::z::"
+#define RCSPROG_OPTSTRING	"A:a:b::c:e::ik:Ll::m:Mn:N:o:qt::TUu::Vx::z::"
 
 const char rcs_version[] = "OpenRCS 4.5";
 
@@ -128,9 +128,6 @@ main(int argc, char **argv)
 	char **cmd_argv;
 	int ret, cmd_argc;
 
-	if (pledge("stdio rpath wpath cpath fattr flock getpw", NULL) == -1)
-		err(2, "pledge");
-
 	ret = -1;
 	rcs_optind = 1;
 	SLIST_INIT(&temp_files);
@@ -222,9 +219,6 @@ rcs_main(int argc, char **argv)
 			elist = rcs_optarg;
 			rcsflags |= RCSPROG_EFLAG;
 			break;
-		case 'I':
-			rcsflags |= INTERACTIVE;
-			break;
 		case 'i':
 			flags |= RCS_CREATE;
 			break;
@@ -248,7 +242,8 @@ rcs_main(int argc, char **argv)
 			rcsflags |= RCSPROG_LFLAG;
 			break;
 		case 'm':
-			free(logstr);
+			if (logstr != NULL)
+				xfree(logstr);
 			logstr = xstrdup(rcs_optarg);
 			break;
 		case 'M':
@@ -327,14 +322,14 @@ rcs_main(int argc, char **argv)
 		}
 
 		if (rcsflags & DESCRIPTION) {
-			if (rcs_set_description(file, descfile, rcsflags) == -1) {
+			if (rcs_set_description(file, descfile) == -1) {
 				warn("%s", descfile);
 				rcs_close(file);
 				continue;
 			}
 		}
 		else if (flags & RCS_CREATE) {
-			if (rcs_set_description(file, NULL, rcsflags) == -1) {
+			if (rcs_set_description(file, NULL) == -1) {
 				warn("stdin");
 				rcs_close(file);
 				continue;
@@ -423,8 +418,8 @@ rcs_main(int argc, char **argv)
 			while (!TAILQ_EMPTY(&(file->rf_access))) {
 				rap = TAILQ_FIRST(&(file->rf_access));
 				TAILQ_REMOVE(&(file->rf_access), rap, ra_list);
-				free(rap->ra_name);
-				free(rap);
+				xfree(rap->ra_name);
+				xfree(rap);
 			}
 			/* not synced anymore */
 			file->rf_flags &= ~RCS_SYNCED;

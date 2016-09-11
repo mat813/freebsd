@@ -1,4 +1,4 @@
-/*	$OpenBSD: buf.c,v 1.26 2015/11/02 16:45:21 nicm Exp $	*/
+/*	$OpenBSD: buf.c,v 1.24 2015/02/05 12:59:58 millert Exp $	*/
 /*
  * Copyright (c) 2003 Jean-Francois Brousseau <jfb@openbsd.org>
  * All rights reserved.
@@ -32,7 +32,6 @@
 #include <fcntl.h>
 #include <stdint.h>
 #include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
 
@@ -138,16 +137,15 @@ out:
 void
 buf_free(BUF *b)
 {
-	if (b == NULL)
-		return;
-	free(b->cb_buf);
-	free(b);
+	if (b->cb_buf != NULL)
+		xfree(b->cb_buf);
+	xfree(b);
 }
 
 /*
  * Free the buffer <b>'s structural information but do not free the contents
  * of the buffer.  Instead, they are returned and should be freed later using
- * free().
+ * xfree().
  */
 void *
 buf_release(BUF *b)
@@ -155,7 +153,7 @@ buf_release(BUF *b)
 	void *tmp;
 
 	tmp = b->cb_buf;
-	free(b);
+	xfree(b);
 	return (tmp);
 }
 

@@ -1,4 +1,4 @@
-/*	$OpenBSD: rcs.c,v 1.85 2016/05/09 13:03:55 schwarze Exp $	*/
+/*	$OpenBSD: rcs.c,v 1.82 2015/01/16 06:40:11 deraadt Exp $	*/
 /*
  * Copyright (c) 2004 Jean-Francois Brousseau <jfb@openbsd.org>
  * All rights reserved.
@@ -66,7 +66,6 @@ struct rcs_kw rcs_expkw[] =  {
 	{ "Revision",	RCS_KW_REVISION },
 	{ "Source",	RCS_KW_SOURCE   },
 	{ "State",	RCS_KW_STATE    },
-	{ "Mdocdate",	RCS_KW_MDOCDATE },
 };
 
 int rcs_errno = RCS_ERR_NOERR;
@@ -158,40 +157,44 @@ rcs_close(RCSFILE *rfp)
 	while (!TAILQ_EMPTY(&(rfp->rf_access))) {
 		rap = TAILQ_FIRST(&(rfp->rf_access));
 		TAILQ_REMOVE(&(rfp->rf_access), rap, ra_list);
-		free(rap->ra_name);
-		free(rap);
+		xfree(rap->ra_name);
+		xfree(rap);
 	}
 
 	while (!TAILQ_EMPTY(&(rfp->rf_symbols))) {
 		rsp = TAILQ_FIRST(&(rfp->rf_symbols));
 		TAILQ_REMOVE(&(rfp->rf_symbols), rsp, rs_list);
 		rcsnum_free(rsp->rs_num);
-		free(rsp->rs_name);
-		free(rsp);
+		xfree(rsp->rs_name);
+		xfree(rsp);
 	}
 
 	while (!TAILQ_EMPTY(&(rfp->rf_locks))) {
 		rlp = TAILQ_FIRST(&(rfp->rf_locks));
 		TAILQ_REMOVE(&(rfp->rf_locks), rlp, rl_list);
 		rcsnum_free(rlp->rl_num);
-		free(rlp->rl_name);
-		free(rlp);
+		xfree(rlp->rl_name);
+		xfree(rlp);
 	}
 
-	rcsnum_free(rfp->rf_head);
-	rcsnum_free(rfp->rf_branch);
+	if (rfp->rf_head != NULL)
+		rcsnum_free(rfp->rf_head);
+	if (rfp->rf_branch != NULL)
+		rcsnum_free(rfp->rf_branch);
 
 	if (rfp->rf_file != NULL)
 		fclose(rfp->rf_file);
-
-	free(rfp->rf_path);
-	free(rfp->rf_comment);
-	free(rfp->rf_expand);
-	free(rfp->rf_desc);
+	if (rfp->rf_path != NULL)
+		xfree(rfp->rf_path);
+	if (rfp->rf_comment != NULL)
+		xfree(rfp->rf_comment);
+	if (rfp->rf_expand != NULL)
+		xfree(rfp->rf_expand);
+	if (rfp->rf_desc != NULL)
+		xfree(rfp->rf_desc);
 	if (rfp->rf_pdata != NULL)
 		rcsparse_free(rfp);
-
-	free(rfp);
+	xfree(rfp);
 }
 
 /*
@@ -346,7 +349,8 @@ rcs_write(RCSFILE *rfp)
 
 	rfp->rf_flags |= RCS_SYNCED;
 
-	free(fn);
+	if (fn != NULL)
+		xfree(fn);
 }
 
 /*
@@ -416,7 +420,7 @@ rcs_movefile(char *from, char *to, mode_t perm, u_int to_flags)
 out:
 	(void)fclose(src);
 	(void)fclose(dst);
-	free(buf);
+	xfree(buf);
 
 	return (0);
 }
@@ -505,8 +509,8 @@ rcs_access_remove(RCSFILE *file, const char *login)
 	}
 
 	TAILQ_REMOVE(&(file->rf_access), ap, ra_list);
-	free(ap->ra_name);
-	free(ap);
+	xfree(ap->ra_name);
+	xfree(ap);
 
 	/* not synced anymore */
 	file->rf_flags &= ~RCS_SYNCED;
@@ -578,9 +582,9 @@ rcs_sym_remove(RCSFILE *file, const char *sym)
 	}
 
 	TAILQ_REMOVE(&(file->rf_symbols), symp, rs_list);
-	free(symp->rs_name);
+	xfree(symp->rs_name);
 	rcsnum_free(symp->rs_num);
-	free(symp);
+	xfree(symp);
 
 	/* not synced anymore */
 	file->rf_flags &= ~RCS_SYNCED;
@@ -739,8 +743,8 @@ rcs_lock_remove(RCSFILE *file, const char *user, RCSNUM *rev)
 
 	TAILQ_REMOVE(&(file->rf_locks), lkp, rl_list);
 	rcsnum_free(lkp->rl_num);
-	free(lkp->rl_name);
-	free(lkp);
+	xfree(lkp->rl_name);
+	xfree(lkp);
 
 	/* not synced anymore */
 	file->rf_flags &= ~RCS_SYNCED;
@@ -758,7 +762,8 @@ rcs_desc_set(RCSFILE *file, const char *desc)
 	char *tmp;
 
 	tmp = xstrdup(desc);
-	free(file->rf_desc);
+	if (file->rf_desc != NULL)
+		xfree(file->rf_desc);
 	file->rf_desc = tmp;
 	file->rf_flags &= ~RCS_SYNCED;
 }
@@ -774,7 +779,8 @@ rcs_comment_set(RCSFILE *file, const char *comment)
 	char *tmp;
 
 	tmp = xstrdup(comment);
-	free(file->rf_comment);
+	if (file->rf_comment != NULL)
+		xfree(file->rf_comment);
 	file->rf_comment = tmp;
 	file->rf_flags &= ~RCS_SYNCED;
 }
@@ -833,7 +839,7 @@ rcs_patch_lines(struct rcs_lines *dlines, struct rcs_lines *plines)
 			for (i = 0; (i < nbln) && (dlp != NULL); i++) {
 				ndlp = TAILQ_NEXT(dlp, l_list);
 				TAILQ_REMOVE(&(dlines->l_lines), dlp, l_list);
-				free(dlp);
+				xfree(dlp);
 				dlp = ndlp;
 				/* last line is gone - reset dlp */
 				if (dlp == NULL) {
@@ -1014,7 +1020,7 @@ rcs_getrev(RCSFILE *rfp, RCSNUM *frev)
 				return (NULL);
 
 		rbuf = rcs_patchfile(data, dlen, patch, plen, rcs_patch_lines);
-		free(data);
+		xfree(data);
 
 		if (rbuf == NULL)
 			break;
@@ -1240,8 +1246,10 @@ rcs_rev_remove(RCSFILE *rf, RCSNUM *rev)
 
 	rcs_freedelta(rdp);
 
-	free(path_tmp1);
-	free(path_tmp2);
+	if (path_tmp1 != NULL)
+		xfree(path_tmp1);
+	if (path_tmp2 != NULL)
+		xfree(path_tmp2);
 
 	return (0);
 }
@@ -1335,7 +1343,8 @@ rcs_kwexp_set(RCSFILE *file, int mode)
 	}
 
 	tmp = xstrdup(buf);
-	free(file->rf_expand);
+	if (file->rf_expand != NULL)
+		xfree(file->rf_expand);
 	file->rf_expand = tmp;
 	/* not synced anymore */
 	file->rf_flags &= ~RCS_SYNCED;
@@ -1405,22 +1414,29 @@ rcs_freedelta(struct rcs_delta *rdp)
 {
 	struct rcs_branch *rb;
 
-	rcsnum_free(rdp->rd_num);
-	rcsnum_free(rdp->rd_next);
+	if (rdp->rd_num != NULL)
+		rcsnum_free(rdp->rd_num);
+	if (rdp->rd_next != NULL)
+		rcsnum_free(rdp->rd_next);
 
-	free(rdp->rd_author);
-	free(rdp->rd_locker);
-	free(rdp->rd_state);
-	free(rdp->rd_log);
-	free(rdp->rd_text);
+	if (rdp->rd_author != NULL)
+		xfree(rdp->rd_author);
+	if (rdp->rd_locker != NULL)
+		xfree(rdp->rd_locker);
+	if (rdp->rd_state != NULL)
+		xfree(rdp->rd_state);
+	if (rdp->rd_log != NULL)
+		xfree(rdp->rd_log);
+	if (rdp->rd_text != NULL)
+		xfree(rdp->rd_text);
 
 	while ((rb = TAILQ_FIRST(&(rdp->rd_branches))) != NULL) {
 		TAILQ_REMOVE(&(rdp->rd_branches), rb, rb_list);
 		rcsnum_free(rb->rb_num);
-		free(rb);
+		xfree(rb);
 	}
 
-	free(rdp);
+	xfree(rdp);
 }
 
 /*
@@ -1597,16 +1613,6 @@ rcs_expand_keywords(char *rcsfile_in, struct rcs_delta *rdp, BUF *bp, int mode)
 				buf_putc(newbuf, ' ');
 			}
 
-			if (kwtype & RCS_KW_MDOCDATE) {
-				strftime(buf, sizeof(buf), "%B", &tb);
-				buf_puts(newbuf, buf);
-				/* Only one blank before single-digit day. */
-				snprintf(buf, sizeof(buf), " %d", tb.tm_mday);
-				buf_puts(newbuf, buf);
-				strftime(buf, sizeof(buf), " %Y ", &tb);
-				buf_puts(newbuf, buf);
-			}
-
 			if (kwtype & RCS_KW_NAME)
 				buf_putc(newbuf, ' ');
 
@@ -1695,7 +1701,8 @@ rcs_deltatext_set(RCSFILE *rfp, RCSNUM *rev, BUF *bp)
 	if ((rdp = rcs_findrev(rfp, rev)) == NULL)
 		return (-1);
 
-	free(rdp->rd_text);
+	if (rdp->rd_text != NULL)
+		xfree(rdp->rd_text);
 
 	len = buf_len(bp);
 	dtext = buf_release(bp);
@@ -1710,7 +1717,8 @@ rcs_deltatext_set(RCSFILE *rfp, RCSNUM *rev, BUF *bp)
 		rdp->rd_tlen = 0;
 	}
 
-	free(dtext);
+	if (dtext != NULL)
+		xfree(dtext);
 
 	return (0);
 }
@@ -1728,7 +1736,8 @@ rcs_rev_setlog(RCSFILE *rfp, RCSNUM *rev, const char *logtext)
 	if ((rdp = rcs_findrev(rfp, rev)) == NULL)
 		return (-1);
 
-	free(rdp->rd_log);
+	if (rdp->rd_log != NULL)
+		xfree(rdp->rd_log);
 
 	rdp->rd_log = xstrdup(logtext);
 	rfp->rf_flags &= ~RCS_SYNCED;
@@ -1767,7 +1776,8 @@ rcs_state_set(RCSFILE *rfp, RCSNUM *rev, const char *state)
 	if ((rdp = rcs_findrev(rfp, rev)) == NULL)
 		return (-1);
 
-	free(rdp->rd_state);
+	if (rdp->rd_state != NULL)
+		xfree(rdp->rd_state);
 
 	rdp->rd_state = xstrdup(state);
 

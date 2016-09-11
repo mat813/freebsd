@@ -1,4 +1,4 @@
-/*	$OpenBSD: ci.c,v 1.224 2016/07/04 01:39:12 millert Exp $	*/
+/*	$OpenBSD: ci.c,v 1.219 2015/01/16 06:40:11 deraadt Exp $	*/
 /*
  * Copyright (c) 2005, 2006 Niall O'Higgins <niallo@openbsd.org>
  * All rights reserved.
@@ -210,7 +210,8 @@ checkin_main(int argc, char **argv)
 			printf("%s\n", rcs_version);
 			exit(0);
 		case 'w':
-			free(pb.author);
+			if (pb.author != NULL)
+				xfree(pb.author);
 			pb.author = xstrdup(rcs_optarg);
 			break;
 		case 'x':
@@ -279,7 +280,7 @@ checkin_main(int argc, char **argv)
 			errx(1, "failed to open rcsfile `%s'", pb.fpath);
 
 		if ((pb.flags & DESCRIPTION) &&
-		    rcs_set_description(pb.file, pb.description, pb.flags) == -1)
+		    rcs_set_description(pb.file, pb.description) == -1)
 			err(1, "%s", pb.filename);
 
 		if (!(pb.flags & QUIET))
@@ -369,11 +370,16 @@ checkin_diff_file(struct checkin_params *pb)
 
 	return (b3);
 out:
-	buf_free(b1);
-	buf_free(b2);
-	buf_free(b3);
-	free(path1);
-	free(path2);
+	if (b1 != NULL)
+		buf_free(b1);
+	if (b2 != NULL)
+		buf_free(b2);
+	if (b3 != NULL)
+		buf_free(b3);
+	if (path1 != NULL)
+		xfree(path1);
+	if (path2 != NULL)
+		xfree(path2);
 
 	return (NULL);
 }
@@ -406,7 +412,7 @@ checkin_getlogmsg(RCSNUM *rev, RCSNUM *rev2, int flags)
 		(void)fprintf(stderr, "new revision: %s; "
 		    "previous revision: %s\n", nrev, prev);
 
-	rcs_msg = rcs_prompt(prompt, flags);
+	rcs_msg = rcs_prompt(prompt);
 
 	return (rcs_msg);
 }
@@ -505,7 +511,7 @@ checkin_update(struct checkin_params *pb)
 			fprintf(stderr,
 			    "reuse log message of previous file? [yn](y): ");
 			if (rcs_yesno('y') != 'y') {
-				free(pb->rcs_msg);
+				xfree(pb->rcs_msg);
 				pb->rcs_msg = NULL;
 			}
 		}
@@ -578,7 +584,7 @@ checkin_update(struct checkin_params *pb)
 		    pb->username, pb->author, NULL, NULL);
 
 	if ((pb->flags & INTERACTIVE) && (pb->rcs_msg[0] == '\0')) {
-		free(pb->rcs_msg);	/* free empty log message */
+		xfree(pb->rcs_msg);	/* free empty log message */
 		pb->rcs_msg = NULL;
 	}
 
@@ -621,7 +627,7 @@ checkin_init(struct checkin_params *pb)
 
 	/* Get description from user */
 	if (pb->description == NULL &&
-	    rcs_set_description(pb->file, NULL, pb->flags) == -1) {
+	    rcs_set_description(pb->file, NULL) == -1) {
 		warn("%s", pb->filename);
 		return (-1);
 	}
@@ -728,7 +734,7 @@ checkin_attach_symbol(struct checkin_params *pb)
 			}
 		}
 	}
-	if ((ret = rcs_sym_add(pb->file, pb->symbol, pb->newrev)) == -1 &&
+	if ((ret = rcs_sym_add(pb->file, pb->symbol, pb->newrev) == -1) &&
 	    (rcs_errno == RCS_ERR_DUPENT)) {
 		rcsnum_tostr(rcs_sym_getrev(pb->file, pb->symbol),
 		    rbuf, sizeof(rbuf));
@@ -982,22 +988,25 @@ checkin_parsekeyword(char *keystring, RCSNUM **rev, time_t *date,
 		(void)xasprintf(&datestring, "%s %s", tokens[3], tokens[4]);
 		if ((*date = date_parse(datestring)) == -1)
 			errx(1, "could not parse date");
-		free(datestring);
+		xfree(datestring);
 
 		if (i < 6)
 			break;
-		free(*author);
+		if (*author != NULL)
+			xfree(*author);
 		*author = xstrdup(tokens[5]);
 
 		if (i < 7)
 			break;
-		free(*state);
+		if (*state != NULL)
+			xfree(*state);
 		*state = xstrdup(tokens[6]);
 		break;
 	case KW_TYPE_AUTHOR:
 		if (i < 2)
 			break;
-		free(*author);
+		if (*author != NULL)
+			xfree(*author);
 		*author = xstrdup(tokens[1]);
 		break;
 	case KW_TYPE_DATE:
@@ -1006,12 +1015,13 @@ checkin_parsekeyword(char *keystring, RCSNUM **rev, time_t *date,
 		(void)xasprintf(&datestring, "%s %s", tokens[1], tokens[2]);
 		if ((*date = date_parse(datestring)) == -1)
 			errx(1, "could not parse date");
-		free(datestring);
+		xfree(datestring);
 		break;
 	case KW_TYPE_STATE:
 		if (i < 2)
 			break;
-		free(*state);
+		if (*state != NULL)
+			xfree(*state);
 		*state = xstrdup(tokens[1]);
 		break;
 	case KW_TYPE_REVISION:

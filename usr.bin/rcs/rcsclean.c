@@ -1,4 +1,4 @@
-/*	$OpenBSD: rcsclean.c,v 1.56 2016/08/26 09:02:54 guenther Exp $	*/
+/*	$OpenBSD: rcsclean.c,v 1.54 2015/01/16 06:40:11 deraadt Exp $	*/
 /*
  * Copyright (c) 2005 Joris Vink <joris@openbsd.org>
  * All rights reserved.
@@ -30,7 +30,6 @@
 #include <err.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <time.h>
 #include <unistd.h>
 
 #include "rcsprog.h"
@@ -210,8 +209,10 @@ rcsclean_file(char *fname, const char *rev_str)
 		rcs_set_mtime(file, rcs_mtime);
 
 out:
-	buf_free(b1);
-	buf_free(b2);
+	if (b1 != NULL)
+		buf_free(b1);
+	if (b2 != NULL)
+		buf_free(b2);
 	if (file != NULL)
 		rcs_close(file);
 }

@@ -1,4 +1,4 @@
-/*	$OpenBSD: rcsutil.c,v 1.45 2016/07/04 01:39:12 millert Exp $	*/
+/*	$OpenBSD: rcsutil.c,v 1.43 2015/01/16 06:40:11 deraadt Exp $	*/
 /*
  * Copyright (c) 2005, 2006 Joris Vink <joris@openbsd.org>
  * Copyright (c) 2006 Xavier Santolaria <xsa@openbsd.org>
@@ -34,7 +34,6 @@
 #include <err.h>
 #include <fcntl.h>
 #include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
 
@@ -229,7 +228,7 @@ rcs_choosefile(const char *filename, char *out, size_t len)
 				if (strlcpy(out, rcspath, len) >= len)
 					errx(1, "rcs_choosefile; truncation");
 
-				free(suffixes);
+				xfree(suffixes);
 				return (fd);
 			}
 
@@ -254,7 +253,7 @@ rcs_choosefile(const char *filename, char *out, size_t len)
 		if (strlcpy(out, fpath, len) >= len)
 			errx(1, "rcs_choosefile: truncation");
 
-		free(suffixes);
+		xfree(suffixes);
 		return (fd);
 	}
 
@@ -265,7 +264,7 @@ rcs_choosefile(const char *filename, char *out, size_t len)
 	if (strlcat(rcspath, suffixes, sizeof(rcspath)) >= sizeof(rcspath))
 		errx(1, "rcs_choosefile: truncation");
 
-	free(suffixes);
+	xfree(suffixes);
 
 	if (strlcpy(out, rcspath, len) >= len)
 		errx(1, "rcs_choosefile: truncation");
@@ -330,19 +329,16 @@ rcs_getrevnum(const char *rev_str, RCSFILE *file)
  * Returns the string's pointer.
  */
 char *
-rcs_prompt(const char *prompt, int flags)
+rcs_prompt(const char *prompt)
 {
 	BUF *bp;
 	size_t len;
 	char *buf;
 
-	if (!(flags & INTERACTIVE) && isatty(STDIN_FILENO))
-		flags |= INTERACTIVE;
-
 	bp = buf_alloc(0);
-	if (flags & INTERACTIVE)
+	if (isatty(STDIN_FILENO))
 		(void)fprintf(stderr, "%s", prompt);
-	if (flags & INTERACTIVE)
+	if (isatty(STDIN_FILENO))
 		(void)fprintf(stderr, ">> ");
 	clearerr(stdin);
 	while ((buf = fgetln(stdin, &len)) != NULL) {
@@ -352,7 +348,7 @@ rcs_prompt(const char *prompt, int flags)
 		else
 			buf_append(bp, buf, len);
 
-		if (flags & INTERACTIVE)
+		if (isatty(STDIN_FILENO))
 			(void)fprintf(stderr, ">> ");
 	}
 	buf_putc(bp, '\0');
@@ -427,8 +423,10 @@ rcs_rev_select(RCSFILE *file, const char *range)
 	}
 	rcs_argv_destroy(revargv);
 
-	free(lnum.rn_id);
-	free(rnum.rn_id);
+	if (lnum.rn_id != NULL)
+		xfree(lnum.rn_id);
+	if (rnum.rn_id != NULL)
+		xfree(rnum.rn_id);
 
 	return (nrev);
 }
@@ -441,7 +439,7 @@ rcs_rev_select(RCSFILE *file, const char *range)
  * Returns 0 on success, -1 on failure, setting errno.
  */
 int
-rcs_set_description(RCSFILE *file, const char *in, int flags)
+rcs_set_description(RCSFILE *file, const char *in)
 {
 	BUF *bp;
 	char *content;
@@ -461,10 +459,10 @@ rcs_set_description(RCSFILE *file, const char *in, int flags)
 		content = xstrdup(in + 1);
 	/* Get description from stdin. */
 	else
-		content = rcs_prompt(prompt, flags);
+		content = rcs_prompt(prompt);
 
 	rcs_desc_set(file, content);
-	free(content);
+	xfree(content);
 	return (0);
 }
 
@@ -510,10 +508,10 @@ rcs_freelines(struct rcs_lines *lines)
 
 	while ((lp = TAILQ_FIRST(&(lines->l_lines))) != NULL) {
 		TAILQ_REMOVE(&(lines->l_lines), lp, l_list);
-		free(lp);
+		xfree(lp);
 	}
 
-	free(lines);
+	xfree(lines);
 }
 
 BUF *
@@ -610,9 +608,9 @@ rcs_strsplit(const char *str, const char *sep)
 void
 rcs_argv_destroy(struct rcs_argvector *av)
 {
-	free(av->str);
-	free(av->argv);
-	free(av);
+	xfree(av->str);
+	xfree(av->argv);
+	xfree(av);
 }
 
 /*
@@ -631,6 +629,6 @@ rcs_strip_suffix(char *filename)
 				break;
 			}
 		}
-		free(suffixes);
+		xfree(suffixes);
 	}
 }

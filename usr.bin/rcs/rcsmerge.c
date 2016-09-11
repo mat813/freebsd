@@ -1,4 +1,4 @@
-/*	$OpenBSD: rcsmerge.c,v 1.57 2016/08/26 09:02:54 guenther Exp $	*/
+/*	$OpenBSD: rcsmerge.c,v 1.55 2015/01/16 06:40:11 deraadt Exp $	*/
 /*
  * Copyright (c) 2005, 2006 Xavier Santolaria <xsa@openbsd.org>
  * All rights reserved.
@@ -28,7 +28,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <time.h>
 #include <unistd.h>
 
 #include "rcsprog.h"
@@ -174,8 +173,12 @@ rcsmerge_main(int argc, char **argv)
 
 out:
 	rcs_close(file);
-	rcsnum_free(rev1);
-	rcsnum_free(rev2);
+
+	if (rev1 != NULL)
+		rcsnum_free(rev1);
+	if (rev2 != NULL)
+		rcsnum_free(rev2);
+
 	return (status);
 }
 

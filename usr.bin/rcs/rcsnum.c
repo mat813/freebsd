@@ -1,4 +1,4 @@
-/*	$OpenBSD: rcsnum.c,v 1.19 2016/08/26 09:02:54 guenther Exp $	*/
+/*	$OpenBSD: rcsnum.c,v 1.16 2015/01/16 06:40:11 deraadt Exp $	*/
 /*
  * Copyright (c) 2004 Jean-Francois Brousseau <jfb@openbsd.org>
  * All rights reserved.
@@ -26,10 +26,8 @@
 
 #include <ctype.h>
 #include <err.h>
-#include <limits.h>
-#include <stdlib.h>
 #include <string.h>
-#include <time.h>
+#include <limits.h>
 
 #include "rcs.h"
 #include "xmalloc.h"
@@ -106,10 +104,9 @@ rcsnum_parse(const char *str)
 void
 rcsnum_free(RCSNUM *rn)
 {
-	if (rn == NULL)
-		return;
-	free(rn->rn_id);
-	free(rn);
+	if (rn->rn_id != NULL)
+		xfree(rn->rn_id);
+	xfree(rn);
 }
 
 /*
@@ -334,7 +331,7 @@ rcsnum_aton(const char *str, char **ep, RCSNUM *nump)
 
 rcsnum_aton_failed:
 	nump->rn_len = 0;
-	free(nump->rn_id);
+	xfree(nump->rn_id);
 	nump->rn_id = NULL;
 	return (-1);
 }
