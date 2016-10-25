@@ -1,19 +1,19 @@
 BST = ../../../stuff/bst
 
 OBJ = dpost.o draw.o color.o pictures.o ps_include.o afm.o \
-	makedev.o glob.o misc.o request.o version.o getopt.o \
+	makedev.o glob.o misc.o request.o version.o \
 	asciitype.o otf.o ../fontmap.o $(BST)/bst.o
 
 FLAGS = -I. -I.. -DFNTDIR='"$(FNTDIR)"' -DPSTDIR='"$(PSTDIR)"' $(EUC) \
 	$(DEFINES) -I../../../include -I.. -I$(BST)
 
 .c.o:
-	$(CC) $(CFLAGS) $(WARN) $(CPPFLAGS) $(FLAGS) -c $<
+	$(CC) $(_CFLAGS) $(FLAGS) -c $<
 
 all: dpost
 
 dpost: $(OBJ)
-	$(CC) $(CFLAGS) $(LDFLAGS) $(OBJ) $(LIBS) -o dpost
+	$(CC) $(_CFLAGS) $(_LDFLAGS) $(OBJ) $(LIBS) -o dpost
 
 install:
 	$(INSTALL) -c dpost $(ROOT)$(BINDIR)/dpost
