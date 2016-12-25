@@ -1,14 +1,14 @@
 OBJ = ptx.o
 
-FLAGS = -DLIBDIR='"$(LIBDIR)"' $(EUC)
+FLAGS = -DLIBDIR='"$(LIBDIR)"' $(EUC) -I../include
 
 .c.o:
-	$(CC) $(CFLAGS) $(WARN) $(CPPFLAGS) $(FLAGS) -c $<
+	$(CC) $(_CFLAGS) $(FLAGS) -c $<
 
-all: ptx
+all: ptx ptx.1
 
 ptx: $(OBJ)
-	$(CC) $(CFLAGS) $(LDFLAGS) $(OBJ) $(LIBS) -o ptx
+	$(CC) $(_CFLAGS) $(_LDFLAGS) $(OBJ) $(LIBS) -o ptx
 
 install:
 	$(INSTALL) -c ptx $(ROOT)$(BINDIR)/ptx
@@ -18,6 +18,12 @@ install:
 	$(INSTALL) -c -m 644 eign $(ROOT)$(LIBDIR)/eign
 
 clean:
-	rm -f $(OBJ) ptx core log *~
+	rm -f $(OBJ) ptx core log *~ ptx.1
 
 mrproper: clean
+
+ptx.1: ptx.1.in
+	sed -e "s'/usr/5bin/sort'`which sort`'" \
+	    -e 's"/usr/ucblib/doctools/tmac/"$(ROOT)$(BINDIR)/"' \
+	    -e 's"/usr/ucblib/"$(ROOT)$(LIBDIR)/"' \
+	    ptx.1.in > $@

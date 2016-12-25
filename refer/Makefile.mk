@@ -15,30 +15,32 @@ FLAGS =	-DMACDIR='"$(MACDIR)"' -DREFDIR='"$(REFDIR)"' $(EUC) $(DEFINES) \
 	-I../include
 
 .c.o:
-	$(CC) $(CFLAGS) $(WARN) $(FLAGS) $(CPPFLAGS) -c $<
+	$(CC) $(_CFLAGS) $(FLAGS) -c $<
 
-all: refer addbib lookbib sortbib roffbib indxbib mkey inv hunt papers/runinv
+all: refer addbib lookbib sortbib roffbib indxbib mkey inv hunt papers/runinv \
+    lookbib.1 refer.1 roffbib.1
+	cd papers && PATH=..:$$PATH sh runinv
 
 refer: $(ROBJ)
-	$(CC) $(CFLAGS) $(LDFLAGS) $(ROBJ) $(LIBS) -o $@
+	$(CC) $(_CFLAGS) $(_LDFLAGS) $(ROBJ) $(LIBS) -o $@
 
 addbib: $(AOBJ)
-	$(CC) $(CFLAGS) $(LDFLAGS) $(AOBJ) $(LIBS) -o $@
+	$(CC) $(_CFLAGS) $(_LDFLAGS) $(AOBJ) $(LIBS) -o $@
 
 lookbib: $(LOBJ)
-	$(CC) $(CFLAGS) $(LDFLAGS) $(LOBJ) $(LIBS) -o $@
+	$(CC) $(_CFLAGS) $(_LDFLAGS) $(LOBJ) $(LIBS) -o $@
 
 sortbib: $(SOBJ)
-	$(CC) $(CFLAGS) $(LDFLAGS) $(SOBJ) $(LIBS) -o $@
+	$(CC) $(_CFLAGS) $(_LDFLAGS) $(SOBJ) $(LIBS) -o $@
 
 mkey: $(MOBJ)
-	$(CC) $(CFLAGS) $(LDFLAGS) $(MOBJ) $(LIBS) -o $@
+	$(CC) $(_CFLAGS) $(_LDFLAGS) $(MOBJ) $(LIBS) -o $@
 
 inv: $(IOBJ)
-	$(CC) $(CFLAGS) $(LDFLAGS) $(IOBJ) $(LIBS) -o $@
+	$(CC) $(_CFLAGS) $(_LDFLAGS) $(IOBJ) $(LIBS) -o $@
 
 hunt: $(HOBJ)
-	$(CC) $(CFLAGS) $(LDFLAGS) $(HOBJ) $(LIBS) -o $@
+	$(CC) $(_CFLAGS) $(_LDFLAGS) $(HOBJ) $(LIBS) -o $@
 
 indxbib: indxbib.sh
 	rm -f $@
@@ -74,7 +76,9 @@ install: all
 	    papers/Rbstjissue $(ROOT)$(REFDIR)/papers/Rbstjissue
 	$(INSTALL) -c -m 644 papers/Rv7man $(ROOT)$(REFDIR)/papers/Rv7man
 	$(INSTALL) -c papers/runinv $(ROOT)$(REFDIR)/papers/runinv
-	cd $(ROOT)$(REFDIR)/papers && PATH=$(ROOT)$(REFDIR):$$PATH ./runinv
+	for i in a b c; do \
+		$(INSTALL) -m 644 papers/Ind.i$$i $(ROOT)$(REFDIR)/papers/; \
+	done
 	for i in addbib.1 lookbib.1 refer.1 roffbib.1 sortbib.1; \
 	do \
 		$(INSTALL) -c -m 644 $$i $(ROOT)$(MANDIR)/man1/$$i || exit; \
@@ -85,9 +89,19 @@ install: all
 clean:
 	rm -f $(ROBJ) refer $(AOBJ) addbib $(LOBJ) lookbib \
 		$(SOBJ) sortbib roffbib indxbib $(MOBJ) mkey \
-		$(IOBJ) inv $(HOBJ) hunt papers/runinv core log *~
+		$(IOBJ) inv $(HOBJ) hunt papers/runinv core log *~ \
+		papers/Ind.i? lookbib.1 refer.1 roffbib.1
 
 mrproper: clean
+
+lookbib.1: lookbib.1.in
+	sed 's"/usr/ucblib/reftools/"$(ROOT)$(REFDIR)/"' lookbib.1.in > $@
+
+refer.1: refer.1.in
+	sed 's"/usr/ucblib/reftools/"$(ROOT)$(REFDIR)/"' refer.1.in > $@
+
+roffbib.1: roffbib.1.in
+	sed 's"/usr/ucblib/doctools/tmac/"$(ROOT)$(MACDIR)/"' roffbib.1.in > $@
 
 addbib.o: addbib.c
 deliv2.o: deliv2.c refer..c

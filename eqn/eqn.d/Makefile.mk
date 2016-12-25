@@ -6,12 +6,12 @@ OBJ = diacrit.o e.o eqnbox.o font.o fromto.o funny.o glob.o integral.o \
 FLAGS = -I. -I.. -I../../include $(DEFINES)
 
 .c.o:
-	$(CC) $(CFLAGS) $(WARN) $(CPPFLAGS) $(FLAGS) -c $<
+	$(CC) $(_CFLAGS) $(FLAGS) -c $<
 
-all: eqn
+all: eqn eqnchar.7
 
 eqn: $(OBJ)
-	$(CC) $(CFLAGS) $(LDFLAGS) $(OBJ) $(LIBS) -o eqn
+	$(CC) $(_CFLAGS) $(_LDFLAGS) $(OBJ) $(LIBS) -o eqn
 
 e.c: e.y
 	$(YACC) -d ../e.y
@@ -29,9 +29,12 @@ install:
 	$(INSTALL) -c -m 644 eqnchar.7 $(ROOT)$(MANDIR)/man7/eqnchar.7
 
 clean:
-	rm -f $(OBJ) eqn e.c y.tab.* core log *~
+	rm -f $(OBJ) eqn e.c y.tab.* core log *~ eqnchar.7
 
 mrproper: clean
+
+eqnchar.7: eqnchar.7.in
+	sed 's"/usr/pub/"$(ROOT)$(PUBDIR)/"' eqnchar.7.in > $@
 
 diacrit.o: ../diacrit.c ../e.h y.tab.h
 eqnbox.o: ../eqnbox.c ../e.h

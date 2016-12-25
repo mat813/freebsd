@@ -1,19 +1,19 @@
 BST = ../../../stuff/bst
 
 OBJ = dpost.o draw.o color.o pictures.o ps_include.o afm.o \
-	makedev.o glob.o misc.o request.o version.o getopt.o \
+	makedev.o glob.o misc.o request.o version.o \
 	asciitype.o otf.o ../fontmap.o $(BST)/bst.o
 
 FLAGS = -I. -I.. -DFNTDIR='"$(FNTDIR)"' -DPSTDIR='"$(PSTDIR)"' $(EUC) \
 	$(DEFINES) -I../../../include -I.. -I$(BST)
 
 .c.o:
-	$(CC) $(CFLAGS) $(WARN) $(CPPFLAGS) $(FLAGS) -c $<
+	$(CC) $(_CFLAGS) $(FLAGS) -c $<
 
-all: dpost
+all: dpost dpost.1
 
 dpost: $(OBJ)
-	$(CC) $(CFLAGS) $(LDFLAGS) $(OBJ) $(LIBS) -o dpost
+	$(CC) $(_CFLAGS) $(_LDFLAGS) $(OBJ) $(LIBS) -o dpost
 
 install:
 	$(INSTALL) -c dpost $(ROOT)$(BINDIR)/dpost
@@ -22,9 +22,15 @@ install:
 	$(INSTALL) -c -m 644 dpost.1 $(ROOT)$(MANDIR)/man1/dpost.1
 
 clean:
-	rm -f $(OBJ) dpost core log *~
+	rm -f $(OBJ) dpost core log *~ dpost.1
 
 mrproper: clean
+
+dpost.1: dpost.1.in
+	sed -e 's"/usr/ucblib/doctools/font/devpost/postscript/"$(ROOT)$(PSTDIR)/"' \
+	    -e 's"/usr/ucblib/doctools/font"$(ROOT)$(FNTDIR)"' \
+	    -e 's"/usr/lib/lp/postscript/"$(ROOT)$(PSTDIR)/"' \
+	    -e 's"/usr/ucblib/doctools/tmac/"$(ROOT)$(MACDIR)/"' dpost.1.in > $@
 
 color.o: color.c gen.h ext.h
 dpost.o: dpost.c comments.h gen.h path.h ext.h ../dev.h dpost.h ../afm.h \

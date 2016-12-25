@@ -3,12 +3,12 @@ OBJ = regexp.o vfontedpr.o vgrindefs.o version.o
 FLAGS = $(EUC) -DLIBDIR='"$(LIBDIR)"' $(DEFINES) -I../include
 
 .c.o:
-	$(CC) $(CFLAGS) $(WARN) $(FLAGS) $(CPPFLAGS) -c $<
+	$(CC) $(_CFLAGS) $(FLAGS) -c $<
 
-all: vgrind vfontedpr
+all: vgrind vfontedpr vgrind.1
 
 vfontedpr: $(OBJ)
-	$(CC) $(CFLAGS) $(LDFLAGS) $(OBJ) $(LIBS) -o vfontedpr
+	$(CC) $(_CFLAGS) $(_LDFLAGS) $(OBJ) $(LIBS) -o vfontedpr
 
 vgrind: vgrind.sh
 	rm -f $@
@@ -29,6 +29,10 @@ install:
 	$(INSTALL) -c -m 644 vgrind.1 $(ROOT)$(MANDIR)/man1/vgrind.1
 
 clean:
-	rm -f $(OBJ) vfontedpr vgrind retest retest.o core log *~
+	rm -f $(OBJ) vfontedpr vgrind retest retest.o core log *~ vgrind.1
 
 mrproper: clean
+
+vgrind.1: vgrind.1.in
+	sed -e 's"/usr/ucblib/tmac/"$(ROOT)$(MACDIR)/"' \
+	    -e 's"/usr/ucblib/"$(ROOT)$(LIBDIR)/"' vgrind.1.in > $@

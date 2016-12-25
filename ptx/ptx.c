@@ -76,6 +76,8 @@ static const char sccsid[] USED = "@(#)/usr/ucb/ptx.sl	1.5 (gritter) 11/6/05";
 #include <unistd.h>
 #include <locale.h>
 #include <limits.h>
+#include "global.h"
+
 #define DEFLTX LIBDIR "/eign"
 #define TILDE 0177
 #define SORT "sort"
@@ -86,17 +88,6 @@ static const char sccsid[] USED = "@(#)/usr/ucb/ptx.sl	1.5 (gritter) 11/6/05";
 #define SET	1
 
 #define isabreak(c) (btable[c])
-
-#ifdef	__GLIBC__
-#ifdef	_IO_getc_unlocked
-#undef	getc
-#define	getc(f)		_IO_getc_unlocked(f)
-#endif
-#ifdef	_IO_putc_unlocked
-#undef	putc
-#define	putc(c, f)	_IO_putc_unlocked(c, f)
-#endif
-#endif
 
 #define	getline		xxgetline
 
@@ -125,7 +116,7 @@ static int wlen;
 static int rflag;
 static int halflen;
 static wchar_t *strtbufp, *endbufp;
-static char *empty = "";
+static const char *empty = "";
 
 static char *infile;
 static FILE *inptr /*= stdin*/;
@@ -149,8 +140,8 @@ static void cmpline(const wchar_t *);
 static int cmpword(const wchar_t *, const wchar_t *, const wchar_t *);
 static void putline(const wchar_t *, const wchar_t *);
 static void getsort(void);
-static wchar_t *rtrim(const wchar_t *, const wchar_t *, int);
-static wchar_t *ltrim(const wchar_t *, const wchar_t *, int);
+static const wchar_t *rtrim(const wchar_t *, const wchar_t *, int);
+static const wchar_t *ltrim(const wchar_t *, const wchar_t *, int);
 static void putout(const wchar_t *, const wchar_t *);
 static void onintr(int);
 static int hash(const wchar_t *, const wchar_t *);
@@ -165,7 +156,8 @@ GETC(FILE *fp)
 {
 	char	mb[MB_LEN_MAX+1];
 	wchar_t	wc;
-	int	c, i, n;
+	int	c, i;
+	size_t n;
 	mbstate_t	state;
 
 	if (peekc != WEOF) {
@@ -197,7 +189,7 @@ bad:	if ((c = getc(fp)) == EOF)
 }
 
 static void
-UNGETC(int c, FILE *fp)
+UNGETC(int c, FILE *fp __unused)
 {
 	peekc = c;
 }
@@ -236,7 +228,7 @@ main(int argc,char **argv)
 	int pid;
 	wchar_t *pend;
 
-	char *xfile;
+	const char *xfile;
 	FILE *xptr;
 
 	setlocale(LC_CTYPE, "");
@@ -543,7 +535,7 @@ getsort(void)
 {
 	register int c;
 	register wchar_t *tilde = NULL, *linep, *ref;
-	wchar_t *p1a,*p1b,*p2a,*p2b,*p3a,*p3b,*p4a,*p4b;
+	const wchar_t *p1a,*p1b,*p2a,*p2b,*p3a,*p3b,*p4a,*p4b;
 	int w;
 
 	if((sortptr = fopen(sortfile,"r")) == NULL)
@@ -618,7 +610,7 @@ getsort(void)
 	}
 }
 
-static wchar_t *
+static const wchar_t *
 rtrim(const wchar_t *a,const wchar_t *c,int d)
 {
 	const wchar_t *b,*x;
@@ -628,10 +620,10 @@ rtrim(const wchar_t *a,const wchar_t *c,int d)
 			b = x;
 	if(b<c&&!iswspace(b[0]))
 		b++;
-	return((wchar_t *)b);
+	return(b);
 }
 
-static wchar_t *
+static const wchar_t *
 ltrim(const wchar_t *c,const wchar_t *b,int d)
 {
 	const wchar_t *a,*x;
@@ -641,7 +633,7 @@ ltrim(const wchar_t *c,const wchar_t *b,int d)
 			a = x;
 	if(a>c&&!iswspace(a[-1]))
 		a--;
-	return((wchar_t *)a);
+	return(a);
 }
 
 static void

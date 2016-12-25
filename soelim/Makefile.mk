@@ -3,12 +3,12 @@ OBJ = soelim.o
 FLAGS =
 
 .c.o:
-	$(CC) $(CFLAGS) $(WARN) $(CPPFLAGS) $(FLAGS) -c $<
+	$(CC) $(_CFLAGS) $(FLAGS) -c $<
 
-all: soelim
+all: soelim soelim.1
 
 soelim: $(OBJ)
-	$(CC) $(CFLAGS) $(LDFLAGS) $(OBJ) $(LIBS) -o soelim
+	$(CC) $(_CFLAGS) $(_LDFLAGS) $(OBJ) $(LIBS) -o soelim
 
 install:
 	$(INSTALL) -c soelim $(ROOT)$(BINDIR)/soelim
@@ -16,6 +16,9 @@ install:
 	$(INSTALL) -c -m 644 soelim.1 $(ROOT)$(MANDIR)/man1/soelim.1
 
 clean:
-	rm -f $(OBJ) soelim core log *~
+	rm -f $(OBJ) soelim core log *~ soelim.1
 
 mrproper: clean
+
+soelim.1: soelim.1.in
+	sed 's"/usr/ucblib/doctools/tmac/"$(ROOT)$(MACDIR)/"' soelim.1.in > $@

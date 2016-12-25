@@ -25,11 +25,9 @@
 #include "refer..c"
 
 static int *coord = 0;
-int hh[50]; 
-extern int *hfreq, hfrflg;
-extern int prfreqs;
+static int hh[50];
 union ptr {
-	unsigned *a; 
+	unsigned *a;
 	long *b;
 };
 
@@ -121,7 +119,7 @@ doquery(long *hpt, int nhash, FILE *fb, int nitem, char **qitem, unsigned *mptr)
 		}
 		else
 		{
-			if (master.a[i] == -1) break;
+			if (master.a[i] == (unsigned int)-1) break;
 		}
 	}
 	nf= i;

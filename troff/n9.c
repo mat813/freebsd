@@ -100,7 +100,7 @@ setz(void)
 static int
 connectchar(tchar i)
 {
-	int	*cp, c;
+	size_t	*cp, c;
 
 	c = cbits(i);
 	if (*connectch) {
@@ -109,7 +109,7 @@ connectchar(tchar i)
 				return 1;
 		return 0;
 	}
-	return c == RULE || c == UNDERLINE || c == ROOTEN;
+	return c == (size_t)RULE || c == (size_t)UNDERLINE || c == (size_t)ROOTEN;
 }
 
 void
@@ -278,7 +278,7 @@ void
 setvline(void)
 {
 	register int i;
-	tchar c, d, delim, rem, ver, neg;
+	tchar c, _d, delim, rem, ver, neg;
 	int	cnt, v;
 	tchar vlbuf[NC];
 	register tchar *vlp;
@@ -298,8 +298,8 @@ setvline(void)
 	if (c = getch(), issame(c, delim)) {
 		c = BOXRULE | chbits;	/*default box rule*/
 	} else {
-		d = getch();
-		if (!issame(d, delim))
+		_d = getch();
+		if (!issame(_d, delim))
 			nodelim(delim);
 	}
 	c |= ZBIT;
@@ -473,7 +473,8 @@ setfield(int x)
 {
 	register tchar ii, jj, *fp;
 	register int i, j, k;
-	int length, ws, npad, temp, type;
+	int length, ws, npad, temp;
+	unsigned int type;
 	tchar **pp, *padptr[NPP];
 	tchar fbuf[FBUFSZ];
 	int savfc, savtc, savlc;
@@ -678,11 +679,11 @@ rtn:
 static int
 readpenalty(int *valp)
 {
-	int	n, t;
+	int	n, _t;
 
-	t = dpenal ? dpenal - INFPENALTY0 - 1 : 0;
+	_t = dpenal ? dpenal - INFPENALTY0 - 1 : 0;
 	noscale++;
-	n = inumb(&t);
+	n = inumb(&_t);
 	noscale--;
 	if (nonumb)
 		return 0;
@@ -734,10 +735,10 @@ setdpenal(void)
 tchar
 mkxfunc(int f, int s)
 {
-	tchar	t = XFUNC;
-	setfbits(t, f);
-	setsbits(t, s);
-	return t;
+	tchar	_t = XFUNC;
+	setfbits(_t, f);
+	setsbits(_t, s);
+	return _t;
 }
 
 void
@@ -798,11 +799,12 @@ popinlev(void)
 
 #ifdef EUC
 /* locale specific initialization */
+wchar_t	*wddelim(wchar_t, wchar_t, int);
+int	wdbindf(wchar_t, wchar_t, int);
+
 void
 localize(void)
 {
-	extern int	wdbindf(wchar_t, wchar_t, int);
-	extern wchar_t	*wddelim(wchar_t, wchar_t, int);
 	char	*codeset;
 
 	codeset = nl_langinfo(CODESET);
@@ -832,13 +834,13 @@ localize(void)
 
 #ifndef	__sun
 int
-wdbindf(wchar_t wc1, wchar_t wc2, int type)
+wdbindf(wchar_t wc1 __unused, wchar_t wc2 __unused, int type __unused)
 {
 	return 6;
 }
 
 wchar_t *
-wddelim(wchar_t wc1, wchar_t wc2, int type)
+wddelim(wchar_t wc1 __unused, wchar_t wc2 __unused, int type __unused)
 {
 	return L" ";
 }
@@ -903,8 +905,8 @@ psskip(struct fg *fp, size_t n)
 static int
 psgetline(struct fg *fp, char **linebp, size_t *linesize)
 {
-	int	i, n = 0;
-	int	nl = 0;
+	size_t	n = 0;
+	int	i, nl = 0;
 
 	if (fp->bp == NULL)
 		fp->bp = fp->buf;
@@ -1148,7 +1150,8 @@ static int
 warn1(void)
 {
 	char	name[NC];
-	int	i, n, sign;
+	int	n, sign;
+	size_t	i;
 	tchar	c;
 
 	switch (cbits(c = getch())) {

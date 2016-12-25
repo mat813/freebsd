@@ -415,6 +415,7 @@ extern int	c_rooten;
 extern int	c_boxrule;
 extern int	c_lefthand;
 extern int	c_dagger;
+extern int	c_isalnum;
 
 struct lgtab {
 	struct lgtab	*next;
@@ -834,7 +835,7 @@ extern struct env {
 	int	_fi;
 	int	_cc;
 	int	_c2;
-	int	_ohc;
+	size_t	_ohc;
 	int	_tdelim;
 	int	_hyf;
 	int	_hyoff;
@@ -921,11 +922,11 @@ extern struct env {
 	int	_wdhyf;
 	tchar	*_hyptr[NHYP];
 	int	_tabtab[NTAB];
-	int	_sentch[NSENT];
-	int	_transch[NSENT];
-	int	_breakch[NSENT];
-	int	_nhych[NSENT];
-	int	_connectch[NSENT];
+	size_t	_sentch[NSENT];
+	size_t	_transch[NSENT];
+	size_t	_breakch[NSENT];
+	size_t	_nhych[NSENT];
+	size_t	_connectch[NSENT];
 	tchar	*_line;
 	tchar	*_word;
 	int	*_wdpenal;

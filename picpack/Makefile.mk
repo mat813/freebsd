@@ -1,14 +1,14 @@
-OBJ = picpack.o getopt.o
+OBJ = picpack.o
 
 FLAGS = -I../troff/troff.d/dpost.d
 
 .c.o:
-	$(CC) $(CFLAGS) $(WARN) $(CPPFLAGS) $(FLAGS) -c $<
+	$(CC) $(_CFLAGS) $(FLAGS) -c $<
 
 all: picpack
 
 picpack: $(OBJ)
-	$(CC) $(CFLAGS) $(LDFLAGS) $(OBJ) $(LIBS) -o picpack
+	$(CC) $(_CFLAGS) $(_LDFLAGS) $(OBJ) $(LIBS) -o picpack
 
 install:
 	$(INSTALL) -c picpack $(ROOT)$(BINDIR)/picpack

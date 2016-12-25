@@ -123,7 +123,7 @@ extern	int	afmget(struct afmtab *, char *, size_t);
 extern	int	otfget(struct afmtab *, char *, size_t);
 extern	struct namecache	*afmnamelook(struct afmtab *, const char *);
 extern	int	afmgetkern(struct afmtab *, int, int);
-extern	void	makefont(int, char *, char *, char *, char *, int);
+extern	void	makefont(int, const char *, const char *, const char *, const char *, int);
 extern	int	unitconv(int);
 extern	void	afmalloc(struct afmtab *, int);
 extern	void	afmremap(struct afmtab *);
@@ -135,11 +135,11 @@ extern	int	nextprime(int n);
 extern	unsigned	pjw(const char *);
 extern	char	*afmencodepath(const char *);
 extern	char	*afmdecodepath(const char *);
-#ifdef	DPOST
 #include <stdio.h>
+int	fprintenc(FILE *, const char *);
+#ifdef	DPOST
 extern	int	otfcff(const char *, char *, size_t, size_t *, size_t *);
 extern	int	otft42(char *, char *, char *, size_t, FILE *);
-extern	int	fprintenc(FILE *, const char *);
 #endif
 
 extern struct dev	dev;

@@ -39,9 +39,9 @@ static void	print(enum show, const char *, ...);
 
 #define	DUMP
 #include <stdio.h>
+#include <unistd.h>
 #include "otf.c"
 #include "afm.c"
-#include "dpost.d/getopt.c"
 
 #include <libgen.h>
 
@@ -109,7 +109,6 @@ dump(const char *name)
 	struct stat	st;
 	FILE	*fp;
 	char	*cp;
-	size_t	l;
 
 	if ((fp = fopen(filename = name, "r")) == NULL) {
 		errprint("%s: cannot open", filename);
@@ -118,9 +117,7 @@ dump(const char *name)
 	memset(&A, 0, sizeof A);
 	a = &A;
 	a->file = a->path = (char *)filename;
-	l = strlen(filename) + 1;
-	a->base = malloc(l);
-	n_strcpy(a->base, filename, l);
+	a->base = strdup(filename);
 	a->base = basename(a->base);
 	if ((cp = strrchr(a->base, '.')) != NULL)
 		*cp = '\0';
@@ -174,20 +171,22 @@ main(int argc, char **argv)
 }
 
 void
-afmaddchar(struct afmtab *a, int C, int tp, int cl, int WX, int B[4], char *N,
-		enum spec s, int gid)
+afmaddchar(struct afmtab *a __unused, int C __unused, int tp __unused,
+		int cl __unused, int WX, int B[4] __unused, char *N,
+		enum spec s __unused, int gid __unused)
 {
 	if (N)
 		print(SHOW_CHARS, "char %s width %d", N, _unitconv(WX));
 }
 
 void
-afmalloc(struct afmtab *a, int n)
+afmalloc(struct afmtab *a __unused, int n __unused)
 {
 }
 
 void
-afmaddkernpair(struct afmtab *a, int ch1, int ch2, int k)
+afmaddkernpair(struct afmtab *a __unused, int ch1 __unused, int ch2 __unused,
+		int k __unused)
 {
 }
 
