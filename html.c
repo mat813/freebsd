@@ -1,4 +1,4 @@
-/*	$Id: html.c,v 1.200 2017/01/21 02:29:57 schwarze Exp $ */
+/*	$Id: html.c,v 1.213 2017/06/08 12:54:58 schwarze Exp $ */
 /*
  * Copyright (c) 2008-2011, 2014 Kristaps Dzonsons <kristaps@bsd.lv>
  * Copyright (c) 2011-2015, 2017 Ingo Schwarze <schwarze@openbsd.org>
@@ -28,8 +28,9 @@
 #include <string.h>
 #include <unistd.h>
 
-#include "mandoc.h"
 #include "mandoc_aux.h"
+#include "mandoc.h"
+#include "roff.h"
 #include "out.h"
 #include "html.h"
 #include "manconf.h"
@@ -65,7 +66,7 @@ static	const struct htmldata htmltags[TAG_MAX] = {
 	{"br",		HTML_NOSTACK | HTML_AUTOCLOSE | HTML_NLALL},
 	{"a",		0},
 	{"table",	HTML_NLALL | HTML_INDENT},
-	{"tbody",	HTML_NLALL | HTML_INDENT},
+	{"colgroup",	HTML_NLALL | HTML_INDENT},
 	{"col",		HTML_NOSTACK | HTML_AUTOCLOSE | HTML_NLALL},
 	{"tr",		HTML_NLALL | HTML_INDENT},
 	{"td",		HTML_NLAROUND},
@@ -76,6 +77,8 @@ static	const struct htmldata htmltags[TAG_MAX] = {
 	{"dt",		HTML_NLAROUND},
 	{"dd",		HTML_NLAROUND | HTML_INDENT},
 	{"pre",		HTML_NLALL | HTML_NOINDENT},
+	{"var",		0},
+	{"cite",	0},
 	{"b",		0},
 	{"i",		0},
 	{"code",	0},
@@ -114,7 +117,6 @@ static	const char	*const roffscales[SCALE_MAX] = {
 
 static	void	 a2width(const char *, struct roffsu *);
 static	void	 print_byte(struct html *, char);
-static	void	 print_endline(struct html *);
 static	void	 print_endword(struct html *);
 static	void	 print_indent(struct html *);
 static	void	 print_word(struct html *, const char *);
@@ -133,7 +135,7 @@ html_alloc(const struct manoutput *outopts)
 
 	h = mandoc_calloc(1, sizeof(struct html));
 
-	h->tags.head = NULL;
+	h->tag = NULL;
 	h->style = outopts->style;
 	h->base_man = outopts->man;
 	h->base_includes = outopts->includes;
@@ -151,8 +153,8 @@ html_free(void *p)
 
 	h = (struct html *)p;
 
-	while ((tag = h->tags.head) != NULL) {
-		h->tags.head = tag->next;
+	while ((tag = h->tag) != NULL) {
+		h->tag = tag->next;
 		free(tag);
 	}
 
@@ -233,6 +235,28 @@ print_metaf(struct html *h, enum mandoc_esc deco)
 	default:
 		break;
 	}
+}
+
+char *
+html_make_id(const struct roff_node *n)
+{
+	const struct roff_node	*nch;
+	char			*buf, *cp;
+
+	for (nch = n->child; nch != NULL; nch = nch->next)
+		if (nch->type != ROFFT_TEXT)
+			return NULL;
+
+	buf = NULL;
+	deroff(&buf, n);
+
+	/* http://www.w3.org/TR/html5/dom.html#the-id-attribute */
+
+	for (cp = buf; *cp != '\0'; cp++)
+		if (*cp == ' ')
+			*cp = '_';
+
+	return buf;
 }
 
 int
@@ -450,19 +474,19 @@ print_otag(struct html *h, enum htmltag tag, const char *fmt, ...)
 	char		 numbuf[16];
 	struct tag	*t;
 	const char	*attr;
-	char		*s;
+	char		*arg1, *arg2;
 	double		 v;
 	int		 i, have_style, tflags;
 
 	tflags = htmltags[tag].flags;
 
-	/* Push this tags onto the stack of open scopes. */
+	/* Push this tag onto the stack of open scopes. */
 
 	if ((tflags & HTML_NOSTACK) == 0) {
 		t = mandoc_malloc(sizeof(struct tag));
 		t->tag = tag;
-		t->next = h->tags.head;
-		h->tags.head = t;
+		t->next = h->tag;
+		h->tag = t;
 	} else
 		t = NULL;
 
@@ -495,12 +519,14 @@ print_otag(struct html *h, enum htmltag tag, const char *fmt, ...)
 	have_style = 0;
 	while (*fmt != '\0') {
 		if (*fmt == 's') {
-			print_word(h, " style=\"");
 			have_style = 1;
 			fmt++;
 			break;
 		}
-		s = va_arg(ap, char *);
+
+		/* Parse a non-style attribute and its arguments. */
+
+		arg1 = va_arg(ap, char *);
 		switch (*fmt++) {
 		case 'c':
 			attr = "class";
@@ -512,31 +538,46 @@ print_otag(struct html *h, enum htmltag tag, const char *fmt, ...)
 			attr = "id";
 			break;
 		case '?':
-			attr = s;
-			s = va_arg(ap, char *);
+			attr = arg1;
+			arg1 = va_arg(ap, char *);
 			break;
 		default:
 			abort();
 		}
+		arg2 = NULL;
+		if (*fmt == 'M')
+			arg2 = va_arg(ap, char *);
+		if (arg1 == NULL)
+			continue;
+
+		/* Print the non-style attributes. */
+
 		print_byte(h, ' ');
 		print_word(h, attr);
 		print_byte(h, '=');
 		print_byte(h, '"');
 		switch (*fmt) {
-		case 'M':
-			print_href(h, s, va_arg(ap, char *), 1);
+		case 'I':
+			print_href(h, arg1, NULL, 0);
 			fmt++;
 			break;
-		case 'I':
-			print_href(h, s, NULL, 0);
+		case 'M':
+			print_href(h, arg1, arg2, 1);
 			fmt++;
 			break;
 		case 'R':
 			print_byte(h, '#');
+			print_encode(h, arg1, NULL, 1);
 			fmt++;
-			/* FALLTHROUGH */
+			break;
+		case 'T':
+			print_encode(h, arg1, NULL, 1);
+			print_word(h, "\" title=\"");
+			print_encode(h, arg1, NULL, 1);
+			fmt++;
+			break;
 		default:
-			print_encode(h, s, NULL, 1);
+			print_encode(h, arg1, NULL, 1);
 			break;
 		}
 		print_byte(h, '"');
@@ -544,30 +585,45 @@ print_otag(struct html *h, enum htmltag tag, const char *fmt, ...)
 
 	/* Print out styles. */
 
-	s = NULL;
-	su = &mysu;
 	while (*fmt != '\0') {
+		arg1 = NULL;
+		su = NULL;
 
 		/* First letter: input argument type. */
 
 		switch (*fmt++) {
 		case 'h':
 			i = va_arg(ap, int);
+			su = &mysu;
 			SCALE_HS_INIT(su, i);
 			break;
 		case 's':
-			s = va_arg(ap, char *);
+			arg1 = va_arg(ap, char *);
 			break;
 		case 'u':
 			su = va_arg(ap, struct roffsu *);
 			break;
 		case 'v':
 			i = va_arg(ap, int);
+			su = &mysu;
 			SCALE_VS_INIT(su, i);
 			break;
 		case 'w':
-			s = va_arg(ap, char *);
-			a2width(s, su);
+			if ((arg2 = va_arg(ap, char *)) == NULL)
+				break;
+			su = &mysu;
+			a2width(arg2, su);
+			if (*fmt == '+') {
+				/* Increase to make even bold text fit. */
+				su->scale *= 1.2;
+				/* Add padding. */
+				su->scale += 3.0;
+				fmt++;
+			}
+			if (*fmt == '-') {
+				su->scale *= -1.0;
+				fmt++;
+			}
 			break;
 		default:
 			abort();
@@ -598,33 +654,37 @@ print_otag(struct html *h, enum htmltag tag, const char *fmt, ...)
 			attr = "min-width";
 			break;
 		case '?':
-			print_word(h, s);
-			print_byte(h, ':');
-			print_byte(h, ' ');
-			print_word(h, va_arg(ap, char *));
-			print_byte(h, ';');
-			if (*fmt != '\0')
-				print_byte(h, ' ');
-			continue;
+			attr = arg1;
+			arg1 = va_arg(ap, char *);
+			break;
 		default:
 			abort();
 		}
-		v = su->scale;
-		if (su->unit == SCALE_MM && (v /= 100.0) == 0.0)
-			v = 1.0;
-		else if (su->unit == SCALE_BU)
-			v /= 24.0;
+		if (su == NULL && arg1 == NULL)
+			continue;
+
+		if (have_style == 1)
+			print_word(h, " style=\"");
+		else
+			print_byte(h, ' ');
 		print_word(h, attr);
 		print_byte(h, ':');
 		print_byte(h, ' ');
-		(void)snprintf(numbuf, sizeof(numbuf), "%.2f", v);
-		print_word(h, numbuf);
-		print_word(h, roffscales[su->unit]);
+		if (su != NULL) {
+			v = su->scale;
+			if (su->unit == SCALE_MM && (v /= 100.0) == 0.0)
+				v = 1.0;
+			else if (su->unit == SCALE_BU)
+				v /= 24.0;
+			(void)snprintf(numbuf, sizeof(numbuf), "%.2f", v);
+			print_word(h, numbuf);
+			print_word(h, roffscales[su->unit]);
+		} else
+			print_word(h, arg1);
 		print_byte(h, ';');
-		if (*fmt != '\0')
-			print_byte(h, ' ');
+		have_style = 2;
 	}
-	if (have_style)
+	if (have_style == 2)
 		print_byte(h, '"');
 
 	va_end(ap);
@@ -679,7 +739,7 @@ print_ctag(struct html *h, struct tag *tag)
 	if (tflags & HTML_NLAFTER)
 		print_endline(h);
 
-	h->tags.head = tag->next;
+	h->tag = tag->next;
 	free(tag);
 }
 
@@ -740,7 +800,7 @@ print_tagq(struct html *h, const struct tag *until)
 {
 	struct tag	*tag;
 
-	while ((tag = h->tags.head) != NULL) {
+	while ((tag = h->tag) != NULL) {
 		print_ctag(h, tag);
 		if (until && tag == until)
 			return;
@@ -752,7 +812,7 @@ print_stagq(struct html *h, const struct tag *suntil)
 {
 	struct tag	*tag;
 
-	while ((tag = h->tags.head) != NULL) {
+	while ((tag = h->tag) != NULL) {
 		if (suntil && tag == suntil)
 			return;
 		print_ctag(h, tag);
@@ -809,7 +869,7 @@ print_byte(struct html *h, char c)
  * If something was printed on the current output line, end it.
  * Not to be called right after print_indent().
  */
-static void
+void
 print_endline(struct html *h)
 {
 	if (h->col == 0)
@@ -890,7 +950,10 @@ print_word(struct html *h, const char *cp)
 static void
 a2width(const char *p, struct roffsu *su)
 {
-	if (a2roffsu(p, su, SCALE_MAX) < 2) {
+	const char	*end;
+
+	end = a2roffsu(p, su, SCALE_MAX);
+	if (end == NULL || *end != '\0') {
 		su->unit = SCALE_EN;
 		su->scale = html_strlen(p);
 	} else if (su->scale < 0.0)

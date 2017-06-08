@@ -1,4 +1,4 @@
-/*	$Id: main.c,v 1.279 2017/01/09 17:49:57 schwarze Exp $ */
+/*	$Id: main.c,v 1.292 2017/06/03 12:17:25 schwarze Exp $ */
 /*
  * Copyright (c) 2008-2012 Kristaps Dzonsons <kristaps@bsd.lv>
  * Copyright (c) 2010-2012, 2014-2017 Ingo Schwarze <schwarze@openbsd.org>
@@ -56,7 +56,6 @@ enum	outmode {
 	OUTMODE_FLN,
 	OUTMODE_LST,
 	OUTMODE_ALL,
-	OUTMODE_INT,
 	OUTMODE_ONE
 };
 
@@ -67,6 +66,7 @@ enum	outt {
 	OUTT_TREE,	/* -Ttree */
 	OUTT_MAN,	/* -Tman */
 	OUTT_HTML,	/* -Thtml */
+	OUTT_MARKDOWN,	/* -Tmarkdown */
 	OUTT_LINT,	/* -Tlint */
 	OUTT_PS,	/* -Tps */
 	OUTT_PDF	/* -Tpdf */
@@ -92,7 +92,7 @@ static	void		  fs_search(const struct mansearch *,
 				const struct manpaths *, int, char**,
 				struct manpage **, size_t *);
 static	int		  koptions(int *, char *);
-static	int		  moptions(int *, char *);
+static	void		  moptions(int *, char *);
 static	void		  mmsg(enum mandocerr, enum mandoclevel,
 				const char *, int, int, const char *);
 static	void		  outdata_alloc(struct curparse *);
@@ -100,7 +100,7 @@ static	void		  parse(struct curparse *, int, const char *);
 static	void		  passthrough(const char *, int, int);
 static	pid_t		  spawn_pager(struct tag_files *);
 static	int		  toptions(struct curparse *, char *);
-static	void		  usage(enum argmode) __attribute__((noreturn));
+static	void		  usage(enum argmode) __attribute__((__noreturn__));
 static	int		  woptions(struct curparse *, char *);
 
 static	const int sec_prios[] = {1, 4, 5, 8, 6, 3, 7, 2, 9};
@@ -113,16 +113,14 @@ int
 main(int argc, char *argv[])
 {
 	struct manconf	 conf;
-	struct curparse	 curp;
 	struct mansearch search;
+	struct curparse	 curp;
 	struct tag_files *tag_files;
-	const char	*progname;
-	char		*auxpaths;
-	char		*defos;
-	unsigned char	*uc;
 	struct manpage	*res, *resp;
-	char		*conf_file, *defpaths;
-	const char	*sec;
+	const char	*progname, *sec, *thisarg;
+	char		*conf_file, *defpaths, *auxpaths;
+	char		*defos, *oarg;
+	unsigned char	*uc;
 	size_t		 i, sz;
 	int		 prio, best_prio;
 	enum outmode	 outmode;
@@ -151,7 +149,7 @@ main(int argc, char *argv[])
 		return mandocdb(argc, argv);
 
 #if HAVE_PLEDGE
-	if (pledge("stdio rpath tmppath tty proc exec flock", NULL) == -1)
+	if (pledge("stdio rpath tmppath tty proc exec", NULL) == -1)
 		err((int)MANDOCLEVEL_SYSERR, "pledge");
 #endif
 
@@ -168,6 +166,7 @@ main(int argc, char *argv[])
 
 	memset(&search, 0, sizeof(struct mansearch));
 	search.outkey = "Nd";
+	oarg = NULL;
 
 	if (strcmp(progname, BINM_MAN) == 0)
 		search.argmode = ARG_NAME;
@@ -194,8 +193,12 @@ main(int argc, char *argv[])
 	show_usage = 0;
 	outmode = OUTMODE_DEF;
 
-	while (-1 != (c = getopt(argc, argv,
-			"aC:cfhI:iK:klM:m:O:S:s:T:VW:w"))) {
+	while ((c = getopt(argc, argv,
+	    "aC:cfhI:iK:klM:m:O:S:s:T:VW:w")) != -1) {
+		if (c == 'i' && search.argmode == ARG_EXPR) {
+			optind--;
+			break;
+		}
 		switch (c) {
 		case 'a':
 			outmode = OUTMODE_ALL;
@@ -225,9 +228,6 @@ main(int argc, char *argv[])
 			}
 			defos = mandoc_strdup(optarg + 3);
 			break;
-		case 'i':
-			outmode = OUTMODE_INT;
-			break;
 		case 'K':
 			if ( ! koptions(&options, optarg))
 				return (int)MANDOCLEVEL_BADARG;
@@ -246,10 +246,7 @@ main(int argc, char *argv[])
 			auxpaths = optarg;
 			break;
 		case 'O':
-			search.outkey = optarg;
-			while (optarg != NULL)
-				manconf_output(&conf.output,
-				    strsep(&optarg, ","));
+			oarg = optarg;
 			break;
 		case 'S':
 			search.arch = optarg;
@@ -294,6 +291,21 @@ main(int argc, char *argv[])
 		}
 	}
 
+	if (oarg != NULL) {
+		if (outmode == OUTMODE_LST)
+			search.outkey = oarg;
+		else {
+			while (oarg != NULL) {
+				thisarg = oarg;
+				if (manconf_output(&conf.output,
+				    strsep(&oarg, ","), 0) == 0)
+					continue;
+				warnx("-O %s: Bad argument", thisarg);
+				return (int)MANDOCLEVEL_BADARG;
+			}
+		}
+	}
+
 	if (outmode == OUTMODE_FLN ||
 	    outmode == OUTMODE_LST ||
 	    !isatty(STDOUT_FILENO))
@@ -301,7 +313,7 @@ main(int argc, char *argv[])
 
 #if HAVE_PLEDGE
 	if (!use_pager)
-		if (pledge("stdio rpath flock", NULL) == -1)
+		if (pledge("stdio rpath", NULL) == -1)
 			err((int)MANDOCLEVEL_SYSERR, "pledge");
 #endif
 
@@ -430,8 +442,8 @@ main(int argc, char *argv[])
 	}
 #endif
 
-	if (search.argmode == ARG_FILE && ! moptions(&options, auxpaths))
-		return (int)MANDOCLEVEL_BADARG;
+	if (search.argmode == ARG_FILE)
+		moptions(&options, auxpaths);
 
 	mchars_alloc();
 	curp.mp = mparse_alloc(options, curp.wlevel, mmsg, defos);
@@ -580,24 +592,22 @@ usage(enum argmode argmode)
 
 	switch (argmode) {
 	case ARG_FILE:
-		fputs("usage: mandoc [-acfhkl] [-I os=name] "
-		    "[-K encoding] [-mformat] [-O option]\n"
+		fputs("usage: mandoc [-ac] [-I os=name] "
+		    "[-K encoding] [-mdoc | -man] [-O options]\n"
 		    "\t      [-T output] [-W level] [file ...]\n", stderr);
 		break;
 	case ARG_NAME:
-		fputs("usage: man [-acfhklw] [-C file] [-I os=name] "
-		    "[-K encoding] [-M path] [-m path]\n"
-		    "\t   [-O option=value] [-S subsection] [-s section] "
-		    "[-T output] [-W level]\n"
-		    "\t   [section] name ...\n", stderr);
+		fputs("usage: man [-acfhklw] [-C file] [-M path] "
+		    "[-m path] [-S subsection]\n"
+		    "\t   [[-s] section] name ...\n", stderr);
 		break;
 	case ARG_WORD:
-		fputs("usage: whatis [-acfhklw] [-C file] "
+		fputs("usage: whatis [-afk] [-C file] "
 		    "[-M path] [-m path] [-O outkey] [-S arch]\n"
 		    "\t      [-s section] name ...\n", stderr);
 		break;
 	case ARG_EXPR:
-		fputs("usage: apropos [-acfhklw] [-C file] "
+		fputs("usage: apropos [-afk] [-C file] "
 		    "[-M path] [-m path] [-O outkey] [-S arch]\n"
 		    "\t       [-s section] expression ...\n", stderr);
 		break;
@@ -736,7 +746,8 @@ parse(struct curparse *curp, int fd, const char *file)
 	if (man == NULL)
 		return;
 	if (man->macroset == MACROSET_MDOC) {
-		mdoc_validate(man);
+		if (curp->outtype != OUTT_TREE || !curp->outopts->noval)
+			mdoc_validate(man);
 		switch (curp->outtype) {
 		case OUTT_HTML:
 			html_mdoc(curp->outdata, man);
@@ -754,12 +765,16 @@ parse(struct curparse *curp, int fd, const char *file)
 		case OUTT_PS:
 			terminal_mdoc(curp->outdata, man);
 			break;
+		case OUTT_MARKDOWN:
+			markdown_mdoc(curp->outdata, man);
+			break;
 		default:
 			break;
 		}
 	}
 	if (man->macroset == MACROSET_MAN) {
-		man_validate(man);
+		if (curp->outtype != OUTT_TREE || !curp->outopts->noval)
+			man_validate(man);
 		switch (curp->outtype) {
 		case OUTT_HTML:
 			html_man(curp->outdata, man);
@@ -902,24 +917,16 @@ koptions(int *options, char *arg)
 	return 1;
 }
 
-static int
+static void
 moptions(int *options, char *arg)
 {
 
 	if (arg == NULL)
-		/* nothing to do */;
-	else if (0 == strcmp(arg, "doc"))
+		return;
+	if (strcmp(arg, "doc") == 0)
 		*options |= MPARSE_MDOC;
-	else if (0 == strcmp(arg, "andoc"))
-		/* nothing to do */;
-	else if (0 == strcmp(arg, "an"))
+	else if (strcmp(arg, "an") == 0)
 		*options |= MPARSE_MAN;
-	else {
-		warnx("-m %s: Bad argument", arg);
-		return 0;
-	}
-
-	return 1;
 }
 
 static int
@@ -930,19 +937,19 @@ toptions(struct curparse *curp, char *arg)
 		curp->outtype = OUTT_ASCII;
 	else if (0 == strcmp(arg, "lint")) {
 		curp->outtype = OUTT_LINT;
-		curp->wlevel  = MANDOCLEVEL_WARNING;
+		curp->wlevel  = MANDOCLEVEL_STYLE;
 	} else if (0 == strcmp(arg, "tree"))
 		curp->outtype = OUTT_TREE;
 	else if (0 == strcmp(arg, "man"))
 		curp->outtype = OUTT_MAN;
 	else if (0 == strcmp(arg, "html"))
 		curp->outtype = OUTT_HTML;
+	else if (0 == strcmp(arg, "markdown"))
+		curp->outtype = OUTT_MARKDOWN;
 	else if (0 == strcmp(arg, "utf8"))
 		curp->outtype = OUTT_UTF8;
 	else if (0 == strcmp(arg, "locale"))
 		curp->outtype = OUTT_LOCALE;
-	else if (0 == strcmp(arg, "xhtml"))
-		curp->outtype = OUTT_HTML;
 	else if (0 == strcmp(arg, "ps"))
 		curp->outtype = OUTT_PS;
 	else if (0 == strcmp(arg, "pdf"))
@@ -959,15 +966,16 @@ static int
 woptions(struct curparse *curp, char *arg)
 {
 	char		*v, *o;
-	const char	*toks[7];
+	const char	*toks[8];
 
 	toks[0] = "stop";
 	toks[1] = "all";
-	toks[2] = "warning";
-	toks[3] = "error";
-	toks[4] = "unsupp";
-	toks[5] = "fatal";
-	toks[6] = NULL;
+	toks[2] = "style";
+	toks[3] = "warning";
+	toks[4] = "error";
+	toks[5] = "unsupp";
+	toks[6] = "fatal";
+	toks[7] = NULL;
 
 	while (*arg) {
 		o = arg;
@@ -977,15 +985,18 @@ woptions(struct curparse *curp, char *arg)
 			break;
 		case 1:
 		case 2:
-			curp->wlevel = MANDOCLEVEL_WARNING;
+			curp->wlevel = MANDOCLEVEL_STYLE;
 			break;
 		case 3:
-			curp->wlevel = MANDOCLEVEL_ERROR;
+			curp->wlevel = MANDOCLEVEL_WARNING;
 			break;
 		case 4:
-			curp->wlevel = MANDOCLEVEL_UNSUPP;
+			curp->wlevel = MANDOCLEVEL_ERROR;
 			break;
 		case 5:
+			curp->wlevel = MANDOCLEVEL_UNSUPP;
+			break;
+		case 6:
 			curp->wlevel = MANDOCLEVEL_BADARG;
 			break;
 		default:
@@ -993,7 +1004,6 @@ woptions(struct curparse *curp, char *arg)
 			return 0;
 		}
 	}
-
 	return 1;
 }
 

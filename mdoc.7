@@ -1,4 +1,4 @@
-.\"	$Id: mdoc.7,v 1.260 2017/01/09 14:10:53 schwarze Exp $
+.\"	$Id: mdoc.7,v 1.264 2017/05/05 15:54:59 schwarze Exp $
 .\"
 .\" Copyright (c) 2009, 2010, 2011 Kristaps Dzonsons <kristaps@bsd.lv>
 .\" Copyright (c) 2010, 2011, 2013-2017 Ingo Schwarze <schwarze@openbsd.org>
@@ -15,7 +15,7 @@
 .\" ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 .\" OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 .\"
-.Dd $Mdocdate: January 9 2017 $
+.Dd $Mdocdate: May 5 2017 $
 .Dt MDOC 7
 .Os
 .Sh NAME
@@ -476,8 +476,6 @@ in the alphabetical
 .It Sx \&Ap Ta apostrophe without surrounding whitespace (no arguments)
 .It Sx \&Sm Ta switch horizontal spacing mode: Op Cm on | off
 .It Sx \&Bk , \&Ek Ta keep block: Fl words
-.It Sx \&br Ta force output line break in text mode (no arguments)
-.It Sx \&sp Ta force vertical space: Op Ar height
 .El
 .Ss Semantic markup for command line utilities:
 .Bl -column "Brq, Bro, Brc" description
@@ -974,10 +972,8 @@ argument.
 A columnated list.
 The
 .Fl width
-argument has no effect; instead, each argument specifies the width
-of one column, using either the scaling width syntax described in
-.Xr roff 7
-or the string length of the argument.
+argument has no effect; instead, the string length of each argument
+specifies the width of one column.
 If the first line of the body of a
 .Fl column
 list is not an
@@ -2738,29 +2734,6 @@ Examples:
 .Dl \&.Xr mandoc 1
 .Dl \&.Xr mandoc 1 \&;
 .Dl \&.Xr mandoc 1 \&Ns s behaviour
-.Ss \&br
-Emits a line-break.
-This macro should not be used; it is implemented for compatibility with
-historical manuals.
-.Pp
-Consider using
-.Sx \&Pp
-in the event of natural paragraph breaks.
-.Ss \&sp
-Emits vertical space.
-This macro should not be used; it is implemented for compatibility with
-historical manuals.
-Its syntax is as follows:
-.Pp
-.D1 Pf \. Sx \&sp Op Ar height
-.Pp
-The
-.Ar height
-argument is a scaling width as described in
-.Xr roff 7 .
-If unspecified,
-.Sx \&sp
-asserts a single vertical space.
 .Sh MACRO SYNTAX
 The syntax of a macro depends on its classification.
 In this section,
@@ -3045,8 +3018,6 @@ then the macro accepts an arbitrary number of arguments.
 .It Sx \&Va  Ta    Yes      Ta    Yes      Ta    n
 .It Sx \&Vt  Ta    Yes      Ta    Yes      Ta    >0
 .It Sx \&Xr  Ta    Yes      Ta    Yes      Ta    2
-.It Sx \&br  Ta    \&No     Ta    \&No     Ta    0
-.It Sx \&sp  Ta    \&No     Ta    \&No     Ta    1
 .El
 .Ss Delimiters
 When a macro argument consists of one single input character
@@ -3064,6 +3035,8 @@ For many macros, when the leading arguments are opening delimiters,
 these delimiters are put before the macro scope,
 and when the trailing arguments are closing delimiters,
 these delimiters are put after the macro scope.
+Spacing is suppressed after opening delimiters
+and before closing delimiters.
 For example,
 .Pp
 .D1 Pf \. \&Aq "( [ word ] ) ."
@@ -3120,7 +3093,7 @@ renders as:
 .D1 Fl a ( b | c \*(Ba d ) e
 .Pp
 This applies to both opening and closing delimiters,
-and also to the middle delimiter:
+and also to the middle delimiter, which does not suppress spacing:
 .Pp
 .Bl -tag -width Ds -offset indent -compact
 .It \&|
