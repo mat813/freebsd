@@ -235,6 +235,8 @@ class MailedOutput(OutputBase):
 
   def mail_headers(self, group, params):
     subject = self.make_subject(group, params)
+    dirlist_limit = 200
+    dirlist = self.dirlist[:dirlist_limit] + bool(self.dirlist[dirlist_limit:]) * '...'
     try:
       subject.encode('ascii')
     except UnicodeError:
@@ -244,10 +246,15 @@ class MailedOutput(OutputBase):
 #    hdrs = 'To: %s\n'      \
     hdrs = 'Subject: %s\n' \
            'X-SVN-Group: %s\n' \
+           'X-SVN-Commit-Author: %s\n' \
+           'X-SVN-Commit-Paths: %s\n' \
+           'X-SVN-Commit-Revision: %d\n' \
+           'X-SVN-Commit-Repository: %s\n' \
            'MIME-Version: 1.0\n' \
            'Content-Type: text/plain; charset=UTF-8\n' \
            'Content-Transfer-Encoding: 8bit\n' \
-           % (subject, group or "defaults")
+           % (subject, group or "defaults", self.repos.author or 'no_author', 
+             dirlist, self.repos.rev, os.path.basename(self.repos.repos_dir))
 #           % (self.from_addr, string.join(self.to_addrs, ', '), subject)
     if self.reply_to:
       hdrs = '%sReply-To: %s\n' % (hdrs, self.reply_to)
@@ -397,8 +404,10 @@ class Commit(Messenger):
     dirlist = string.join(dirlist)
     if commondir:
       self.output.subject = 'r%d - in %s: %s' % (repos.rev, commondir, dirlist)
+      self.output.dirlist = 'in %s: %s' % (commondir, dirlist)
     else:
       self.output.subject = 'r%d - %s' % (repos.rev, dirlist)
+      self.output.dirlist = '%s' % (dirlist)
 
   def generate(self):
     "Generate email for the various groups and option-params."
