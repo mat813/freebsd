@@ -20,6 +20,7 @@
 ^stable/11/			re
 #^stable/10/			re
 ^release/			re
+^releng/11.1/			re
 ^releng/11.0/			(security-officer|so)
 ^releng/10.[0-3]/		(security-officer|so)
 ^releng/9.[0-3]/		(security-officer|so)
