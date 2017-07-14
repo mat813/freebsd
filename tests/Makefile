@@ -25,14 +25,18 @@ PRGDIR  = ../programs
 PYTHON ?= python3
 TESTARTEFACT := versionsTest namespaceTest
 
-
-CPPFLAGS+= -I$(ZSTDDIR) -I$(ZSTDDIR)/common -I$(ZSTDDIR)/compress -I$(ZSTDDIR)/dictBuilder -I$(ZSTDDIR)/deprecated -I$(PRGDIR)
-CFLAGS  ?= -O3
-CFLAGS  += -g -Wall -Wextra -Wcast-qual -Wcast-align -Wshadow \
-           -Wstrict-aliasing=1 -Wswitch-enum -Wdeclaration-after-statement \
-           -Wstrict-prototypes -Wundef -Wformat-security
-CFLAGS  += $(MOREFLAGS)
-FLAGS    = $(CPPFLAGS) $(CFLAGS) $(LDFLAGS)
+DEBUGLEVEL= 1
+DEBUGFLAGS= -g -DZSTD_DEBUG=$(DEBUGLEVEL)
+CPPFLAGS += -I$(ZSTDDIR) -I$(ZSTDDIR)/common -I$(ZSTDDIR)/compress \
+            -I$(ZSTDDIR)/dictBuilder -I$(ZSTDDIR)/deprecated -I$(PRGDIR)
+CFLAGS   ?= -O3
+CFLAGS   += -Wall -Wextra -Wcast-qual -Wcast-align -Wshadow                 \
+            -Wstrict-aliasing=1 -Wswitch-enum -Wdeclaration-after-statement \
+            -Wstrict-prototypes -Wundef -Wformat-security                   \
+            -Wvla -Wformat=2 -Winit-self -Wfloat-equal -Wwrite-strings      \
+            -Wredundant-decls
+CFLAGS   += $(DEBUGFLAGS) $(MOREFLAGS)
+FLAGS     = $(CPPFLAGS) $(CFLAGS) $(LDFLAGS)
 
 
 ZSTDCOMMON_FILES := $(ZSTDDIR)/common/*.c
@@ -65,13 +69,15 @@ FUZZERTEST ?= -T5mn
 ZSTDRTTEST = --test-large-data
 DECODECORPUS_TESTTIME ?= -T30
 
-.PHONY: default all all32 dll clean test test32 test-all namespaceTest versionsTest
+.PHONY: default all all32 allnothread dll clean test test32 test-all namespaceTest versionsTest
 
 default: fullbench
 
-all: fullbench fuzzer zstreamtest paramgrill datagen zbufftest
+all: fullbench fuzzer zstreamtest paramgrill datagen zbufftest decodecorpus
 
 all32: fullbench32 fuzzer32 zstreamtest32 zbufftest32
+
+allnothread: fullbench fuzzer paramgrill datagen zbufftest decodecorpus
 
 dll: fuzzer-dll zstreamtest-dll zbufftest-dll
 
@@ -87,11 +93,12 @@ zstd-nolegacy:
 gzstd:
 	$(MAKE) -C $(PRGDIR) $@
 
-fullbench  : $(ZSTD_FILES) $(PRGDIR)/datagen.c fullbench.c
-	$(CC)      $(FLAGS) $^ -o $@$(EXT)
-
-fullbench32 : $(ZSTD_FILES) $(PRGDIR)/datagen.c fullbench.c
-	$(CC)  -m32  $(FLAGS) $^ -o $@$(EXT)
+fullbench32: CPPFLAGS += -m32
+fullbench fullbench32 : CPPFLAGS += $(MULTITHREAD_CPP)
+fullbench fullbench32 : LDFLAGS += $(MULTITHREAD_LD)
+fullbench fullbench32 : DEBUGFLAGS =   # turn off assert() for speed measurements
+fullbench fullbench32 : $(ZSTD_FILES) $(PRGDIR)/datagen.c fullbench.c
+	$(CC) $(FLAGS) $^ -o $@$(EXT)
 
 fullbench-lib: $(PRGDIR)/datagen.c fullbench.c
 	$(MAKE) -C $(ZSTDDIR) libzstd.a
@@ -152,6 +159,7 @@ zstreamtest-dll : $(ZSTDDIR)/common/xxhash.c $(PRGDIR)/datagen.c zstreamtest.c
 	$(MAKE) -C $(ZSTDDIR) libzstd
 	$(CC) $(CPPFLAGS) $(CFLAGS) $^ $(LDFLAGS) -o $@$(EXT)
 
+paramgrill : DEBUGFLAGS =
 paramgrill : $(ZSTD_FILES) $(PRGDIR)/datagen.c paramgrill.c
 	$(CC)      $(FLAGS) $^ -lm -o $@$(EXT)
 
@@ -172,7 +180,7 @@ legacy : CPPFLAGS+= -I$(ZSTDDIR)/legacy
 legacy : $(ZSTD_FILES) $(wildcard $(ZSTDDIR)/legacy/*.c) legacy.c
 	$(CC)      $(FLAGS) $^ -o $@$(EXT)
 
-decodecorpus	: $(filter-out $(ZSTDDIR)/compress/zstd_compress.c, $(wildcard $(ZSTD_FILES))) decodecorpus.c
+decodecorpus	: $(filter-out $(ZSTDDIR)/compress/zstd_compress.c, $(wildcard $(ZSTD_FILES))) $(ZDICT_FILES) decodecorpus.c
 	$(CC)      $(FLAGS) $^ -o $@$(EXT) -lm
 
 symbols  : symbols.c
@@ -216,7 +224,7 @@ clean:
 ifneq (,$(filter $(shell uname),Linux Darwin GNU/kFreeBSD GNU OpenBSD FreeBSD NetBSD DragonFly SunOS))
 HOST_OS = POSIX
 
-valgrindTest: VALGRIND = valgrind --leak-check=full --error-exitcode=1
+valgrindTest: VALGRIND = valgrind --leak-check=full --show-leak-kinds=all --error-exitcode=1
 valgrindTest: zstd datagen fuzzer fullbench
 	@echo "\n ---- valgrind tests : memory analyzer ----"
 	$(VALGRIND) ./datagen -g50M > $(VOID)
@@ -264,7 +272,7 @@ endif
 
 test32: test-zstd32 test-fullbench32 test-fuzzer32 test-zstream32
 
-test-all: test test32 valgrindTest
+test-all: test test32 valgrindTest test-decodecorpus-cli
 
 test-zstd: ZSTD = $(PRGDIR)/zstd
 test-zstd: zstd zstd-playTests
@@ -300,10 +308,10 @@ test-fullbench32: fullbench32 datagen
 	$(QEMU_SYS) ./fullbench32 -i1 -P0
 
 test-fuzzer: fuzzer
-	$(QEMU_SYS) ./fuzzer $(FUZZERTEST)
+	$(QEMU_SYS) ./fuzzer $(FUZZERTEST) $(FUZZER_FLAGS)
 
 test-fuzzer32: fuzzer32
-	$(QEMU_SYS) ./fuzzer32 $(FUZZERTEST)
+	$(QEMU_SYS) ./fuzzer32 $(FUZZERTEST) $(FUZZER_FLAGS)
 
 test-zbuff: zbufftest
 	$(QEMU_SYS) ./zbufftest $(ZSTREAM_TESTTIME)
@@ -312,10 +320,12 @@ test-zbuff32: zbufftest32
 	$(QEMU_SYS) ./zbufftest32 $(ZSTREAM_TESTTIME)
 
 test-zstream: zstreamtest
-	$(QEMU_SYS) ./zstreamtest $(ZSTREAM_TESTTIME)
+	$(QEMU_SYS) ./zstreamtest $(ZSTREAM_TESTTIME) $(FUZZER_FLAGS)
+	$(QEMU_SYS) ./zstreamtest --mt $(ZSTREAM_TESTTIME) $(FUZZER_FLAGS)
+	$(QEMU_SYS) ./zstreamtest --newapi $(ZSTREAM_TESTTIME) $(FUZZER_FLAGS)
 
 test-zstream32: zstreamtest32
-	$(QEMU_SYS) ./zstreamtest32 $(ZSTREAM_TESTTIME)
+	$(QEMU_SYS) ./zstreamtest32 $(ZSTREAM_TESTTIME) $(FUZZER_FLAGS)
 
 test-longmatch: longmatch
 	$(QEMU_SYS) ./longmatch
@@ -331,6 +341,39 @@ test-legacy: legacy
 
 test-decodecorpus: decodecorpus
 	$(QEMU_SYS) ./decodecorpus -t $(DECODECORPUS_TESTTIME)
+
+test-decodecorpus-cli: decodecorpus
+	@echo "\n ---- decodecorpus basic cli tests ----"
+	@mkdir testdir
+	./decodecorpus -n5 -otestdir -ptestdir
+	@cd testdir && \
+	$(ZSTD) -d z000000.zst -o tmp0 && \
+	$(ZSTD) -d z000001.zst -o tmp1 && \
+	$(ZSTD) -d z000002.zst -o tmp2 && \
+	$(ZSTD) -d z000003.zst -o tmp3 && \
+	$(ZSTD) -d z000004.zst -o tmp4 && \
+	diff z000000 tmp0 && \
+	diff z000001 tmp1 && \
+	diff z000002 tmp2 && \
+	diff z000003 tmp3 && \
+	diff z000004 tmp4 && \
+	rm ./* && \
+	cd ..
+	@echo "\n ---- decodecorpus dictionary cli tests ----"
+	./decodecorpus -n5 -otestdir -ptestdir --use-dict=1MB
+	@cd testdir && \
+	$(ZSTD) -d z000000.zst -D dictionary -o tmp0 && \
+	$(ZSTD) -d z000001.zst -D dictionary -o tmp1 && \
+	$(ZSTD) -d z000002.zst -D dictionary -o tmp2 && \
+	$(ZSTD) -d z000003.zst -D dictionary -o tmp3 && \
+	$(ZSTD) -d z000004.zst -D dictionary -o tmp4 && \
+	diff z000000 tmp0 && \
+	diff z000001 tmp1 && \
+	diff z000002 tmp2 && \
+	diff z000003 tmp3 && \
+	diff z000004 tmp4 && \
+	cd ..
+	@rm -rf testdir
 
 test-pool: pool
 	$(QEMU_SYS) ./pool

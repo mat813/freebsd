@@ -33,12 +33,13 @@ extern "C" {
 #define XZ_EXTENSION    ".xz"
 #define GZ_EXTENSION    ".gz"
 #define ZSTD_EXTENSION  ".zst"
+#define LZ4_EXTENSION   ".lz4"
 
 
 /*-*************************************
 *  Types
 ***************************************/
-typedef enum { FIO_zstdCompression, FIO_gzipCompression, FIO_xzCompression, FIO_lzmaCompression } FIO_compressionType_t;
+typedef enum { FIO_zstdCompression, FIO_gzipCompression, FIO_xzCompression, FIO_lzmaCompression, FIO_lz4Compression } FIO_compressionType_t;
 
 
 /*-*************************************
@@ -69,6 +70,7 @@ int FIO_compressFilename (const char* outfilename, const char* infilename, const
     @return : 0 == ok;  1 == pb with src file. */
 int FIO_decompressFilename (const char* outfilename, const char* infilename, const char* dictFileName);
 
+int FIO_listMultipleFiles(unsigned numFiles, const char** filenameTable, int displayLevel);
 
 /*-*************************************
 *  Multiple File functions
