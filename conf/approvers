@@ -18,7 +18,7 @@
 #
 #^head/				re
 #^stable/11/			re
-#^stable/10/			re
+^stable/10/			re
 ^release/			re
 ^releng/11.[0-1]/		(security-officer|so)
 ^releng/10.[0-3]/		(security-officer|so)
