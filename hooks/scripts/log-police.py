@@ -57,6 +57,7 @@ def fix_log_message(log_message):
     if line == "Changes:": continue
     if line == "With hat:": continue
     if line == "Sponsored by:": continue
+    if line == "Pull Request:": continue
     if line == "Differential Revision:": continue
     s = s + line + "\n"
   s = s.rstrip() + "\n"
