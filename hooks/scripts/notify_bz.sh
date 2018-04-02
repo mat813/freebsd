@@ -26,6 +26,8 @@ for pr in $PRS; do
 		echo "From: commit-hook@freebsd.org"
 		echo "To: notify-bz@freebsd.org"
 		echo "Subject: [Bug $pr]"
+		echo "Content-Type: text/plain; charset=UTF-8"
+		echo "Content-Transfer-Encoding: 8bit"
 		echo ""
 		echo "A commit references this bug:"
 		echo ""
