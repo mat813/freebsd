@@ -21,6 +21,7 @@
 ^stable/11/			re
 ^release/			re
 ^releng/12.0/			(security-officer|so)
+^releng/11.3/			re
 ^releng/11.[0-2]/		(security-officer|so)
 ^releng/10.[0-4]/		(security-officer|so)
 ^releng/9.[0-3]/		(security-officer|so)
