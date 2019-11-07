@@ -26,14 +26,19 @@ GMAKE=${GMAKE:-gmake}
 
 # For consistency...
 Error() {
-	echo ERROR: ${1+"$@"} >&2
-	exit 1
+    echo ERROR: ${1+"$@"} >&2
+    exit 1
 }
 
 Cd() {
-	[ $# -eq 1 ] || Error "Cd() takes a single parameter."
-	cd $1 || Error "cannot \"cd $1\" from $PWD"
-        info "Directory =" `pwd`
+    [ $# -eq 1 ] || Error "Cd() takes a single parameter."
+    cd $1 || Error "cannot \"cd $1\" from $PWD"
+    info "Directory =" `pwd`
+         
+    if [ "$DOC" = doc ]; then
+       echo "    cd $1"
+       echo "  "
+    fi
 }
 
 siginfo() {
@@ -51,8 +56,8 @@ run() {
     CMD="$2"
 
     if [ "$DOC" = doc ]; then
-        echo " == $desc"
-        echo "     - $cmd"
+        echo "## $desc"
+        echo "     $cmd"
         echo " "
     else
         echo "===="
@@ -66,7 +71,7 @@ run() {
 }
 
 info() {
-    echo " -- " "$@"
+    echo "## -- " "$@"
 }
 
 okay() {
@@ -182,12 +187,6 @@ fi
 
 # We need the release tar ball for the HTML docs, nothing more
 DOCURL=https://github.com/Juniper/libxo/releases/download/$VERS/libxo-$VERS.tar.gz
-DOCBALL=~/tars/doc-$BASEURL
-
-if [ "$FETCH" = "yes" -o ! -f $DOCBALL ]; then
-    run "fetching doc tarball" "fetch -o $DOCBALL $DOCURL"
-    test -s ${DOCBALL} || Error need DOCBALL
-fi
 
 # BASE should match what the TARBALL contains
 BASE=`basename $TARBALL .tar.gz`
@@ -196,8 +195,6 @@ VERSION=`echo $BASE | sed 's/libxo-//'`
 TF=$BASE/info
 
 run "untarring source files TARBALL" "tar zxf $TARBALL"
-run "untarring html manual" \
-    "tar zxf $DOCBALL libxo-$VERS/doc/libxo-manual.html"
 
 # List of top-level files we want to ignore
 TOPJUNKFILES="\
