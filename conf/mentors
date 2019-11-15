@@ -10,14 +10,11 @@
 # Sort by mentee login name.
 
 # Mentee	Mentor		Optional comment
-achim		scottl		Co-mentor: emaste
 anish		jhb
 bdragon		jhibbits
 brd		allanjude	Co-mentor: bapt
 chs		imp
-def		pjd
 gordon		delphij		Co-mentor: emaste
-jceel		trasz
 jkh		rwatson
 johalun		imp
 kadesai		ken		Co-mentor: scottl, ambrisko
@@ -28,7 +25,6 @@ miwi		araujo
 mjoras		rstone
 ram		ken		Co-mentor: mav
 scottph		jhb		Co-mentor: emaste
-slm		ken		Co-mentor: scottl, ambrisko
 thj		jtl		Co-mentor: bz
 tmunro		mjg		Co-mentor: allanjude
 wosch		cem

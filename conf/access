@@ -17,7 +17,6 @@
 # Changes to email forwards can be made without core's approval.  Please
 # use "Approved by: core (implicit)" to that type of commits.
 #
-achim
 adrian
 ae
 alc
@@ -59,7 +58,6 @@ dab
 daichi
 davidcs
 dchagin
-def
 delphij
 des
 dexuan
@@ -98,10 +96,8 @@ imp
 jah
 jamie
 jasone
-jceel
 jch
 jchandra
-jeb
 jeff
 jhb
 jhibbits
@@ -109,7 +105,6 @@ jilles
 jkim
 jlh
 jmallett
-jmcneill
 jmg
 joerg	freebsd-devel@uriah.heep.sax.de
 johalun
@@ -174,7 +169,6 @@ pjd
 pkelsey
 pluknet
 pstef
-qingli
 ram
 ray
 rgrimes
@@ -185,7 +179,6 @@ royger
 rpokala
 rrs
 rstone
-ru
 rwatson bb+lists.freebsd.cvs-committers@cyrus.watson.org
 sbruno
 schweikh
@@ -193,14 +186,10 @@ scottl
 scottph
 se
 sef
-sephe
 sgalabov
 shurd
-silby
 sjg
-skra
 slavash
-slm
 smh
 sobomax
 stevek
