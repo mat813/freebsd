@@ -34,7 +34,7 @@
 ^svnadmin/conf/approvers	(core|re)
 ^svnadmin/conf/access		core
 ^head/LOCKS			core
-^head/sys/dev/random		(security-officer|so|secteam|core)
-^head/sys/libkern/arc4random.c	(security-officer|so|secteam|core)
-^stable/([7-9]|1[01])/sys/dev/random	(security-officer|so|secteam|core)
-^stable/([7-9]|1[01])/sys/libkern/arc4random.c	(security-officer|so|secteam|core)
+^head/sys/dev/random		(security-officer|so|secteam|core|csprng)
+^head/sys/libkern/arc4random.c	(security-officer|so|secteam|core|csprng)
+^stable/([7-9]|1[012])/sys/dev/random	(security-officer|so|secteam|core|csprng)
+^stable/([7-9]|1[012])/sys/libkern/arc4random.c	(security-officer|so|secteam|core|csprng)
