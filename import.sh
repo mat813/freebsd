@@ -290,7 +290,7 @@ run "build for real" \
 # Move over and build the source tree
 Cd $HEAD
 
-run "copying xo_config.h" "(echo '/* \$FreeBSD\$ */' ; cat $CWD/dist/build/libxo/xo_config.h ) > $HEAD/lib/libxo/xo_config.h"
+run "copying xo_config.h" "(echo '/* \$FreeBSD\$ */' ; cat $CWD/dist/build/libxo/xo_config.h ) > $HEAD/lib/libxo/libxo/xo_config.h"
 run "copying add.man" "(echo '.\\\" \$FreeBSD\$' ; cat $CWD/dist/build/libxo/add.man ) > $HEAD/lib/libxo/add.man"
 run "copying xohtml.sh" "(echo '#!/bin/sh' ; echo '# \$FreeBSD\$' ; cat $CWD/dist/build/xohtml/xohtml.sh ) > $HEAD/usr.bin/xohtml/xohtml.sh"
 
