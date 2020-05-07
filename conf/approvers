@@ -37,5 +37,5 @@
 ^head/LOCKS			core
 ^head/sys/dev/random		(security-officer|so|secteam|core|csprng)
 ^head/sys/libkern/arc4random.c	(security-officer|so|secteam|core|csprng)
-^stable/([7-9]|1[012])/sys/dev/random	(security-officer|so|secteam|core|csprng)
-^stable/([7-9]|1[012])/sys/libkern/arc4random.c	(security-officer|so|secteam|core|csprng)
+^stable/(1[12])/sys/dev/random	(security-officer|so|secteam|core|csprng)
+^stable/(1[12])/sys/libkern/arc4random.c	(security-officer|so|secteam|core|csprng)
